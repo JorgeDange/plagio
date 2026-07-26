@@ -325,7 +325,22 @@ def actualizar_resultado_suspeito(id, verificacao_id, pct, nivel):
 def remover_tcc_suspeito(id):
     db = get_db()
     cur = db.cursor()
-    cur.execute('DELETE FROM verificacoes WHERE tcc_suspeito_id = %s', (id,))
+
+    cur.execute('SELECT id FROM verificacoes WHERE tcc_suspeito_id = %s', (id,))
+    verif_ids = [r[0] for r in cur.fetchall()]
+
+    if verif_ids:
+        placeholders = ','.join(['%s'] * len(verif_ids))
+        cur.execute(f'DELETE FROM chunks_suspeitos WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM analises_ia WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM fontes_externas_resultados WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM fontes_externas WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM matches WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM verificacoes_normas_infracoes WHERE normas_id IN (SELECT id FROM verificacoes_normas WHERE verificacao_id IN ({placeholders}))', verif_ids)
+        cur.execute(f'DELETE FROM verificacoes_normas WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM veredictos_finais WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM verificacoes WHERE tcc_suspeito_id = %s', (id,))
+
     cur.execute('DELETE FROM tcc_suspeitos WHERE id = %s', (id,))
     db.commit()
 
