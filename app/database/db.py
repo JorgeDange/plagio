@@ -480,7 +480,7 @@ def contar_por_nivel():
 def verificacoes_por_mes():
     db = get_db()
     cur = db.cursor()
-    cur.execute('''SELECT TO_CHAR(data, 'YYYY-MM') as mes, COUNT(*) as total
+    cur.execute('''SELECT TO_CHAR(data::date, 'YYYY-MM') as mes, COUNT(*) as total
         FROM verificacoes GROUP BY mes ORDER BY mes DESC LIMIT 6''')
     rows = cur.fetchall()
     return {r[0]: r[1] for r in reversed(rows)}
@@ -490,7 +490,7 @@ def verificacoes_por_mes_aprov_reprov():
     db = get_db()
     cur = db.cursor()
     cur.execute('''
-        SELECT TO_CHAR(data, 'YYYY-MM') as mes,
+        SELECT TO_CHAR(data::date, 'YYYY-MM') as mes,
                 SUM(CASE WHEN nivel = 'Baixo' THEN 1 ELSE 0 END) as aprovados,
                 SUM(CASE WHEN nivel IN ('Moderado','Alto','Critico') THEN 1 ELSE 0 END) as reprovados
         FROM verificacoes GROUP BY mes ORDER BY mes
