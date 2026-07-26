@@ -55,11 +55,12 @@ except Exception as e:
     print(f'⚠ Aviso na migração: {e}')
 "
 
-echo "👤 A verificar administrador..."
+echo "👤 A verificar/criar administrador..."
 python -c "
 import os
 import psycopg2
 from dotenv import load_dotenv
+from flask_bcrypt import generate_password_hash
 
 load_dotenv()
 
@@ -75,12 +76,21 @@ else:
         port=os.getenv('PGPORT', '5432')
     )
 
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'jorgedange@gmail.com')
+ADMIN_PASS  = os.getenv('ADMIN_PASS', 'Develop/28')
+
 try:
     cur = db.cursor()
     cur.execute(\"SELECT COUNT(*) FROM utilizadores WHERE papel = 'admin'\")
     count = cur.fetchone()[0]
     if count == 0:
-        print('  ℹ Nenhum administrador encontrado. Execute scripts/criar_admin.py após o deploy.')
+        pw_hash = generate_password_hash(ADMIN_PASS).decode('utf-8')
+        cur.execute(
+            \"INSERT INTO utilizadores (nome, email, password_hash, papel) VALUES (%s, %s, %s, %s)\",
+            ('Administrador', ADMIN_EMAIL, pw_hash, 'admin')
+        )
+        db.commit()
+        print(f'  ✅ Administrador criado: {ADMIN_EMAIL}')
     else:
         print(f'  ✅ {count} administrador(es) encontrado(s)')
     cur.close()
