@@ -129,13 +129,13 @@ def _load_llm_config(app: Flask) -> None:
         with app.app_context():
             from app.database.db import get_db
             db = get_db()
-        cur = db.cursor()
-        cur.execute("SELECT chave, valor FROM configuracoes WHERE chave LIKE 'LLM_%%' OR chave = 'OLLAMA_URL'")
-        for r in cur.fetchall():
-            app.config[r[0]] = r[1]
-        cur.execute("SELECT COUNT(*) FROM configuracoes WHERE chave LIKE 'LLM_%%' OR chave = 'OLLAMA_URL'")
-        count = cur.fetchone()[0]
-        if count:
-            print(f'[Flask] Configuracoes IA carregadas: {count} chave(s)')
+            cur = db.cursor()
+            cur.execute("SELECT chave, valor FROM configuracoes WHERE chave LIKE 'LLM_%%' OR chave = 'OLLAMA_URL'")
+            for r in cur.fetchall():
+                app.config[r[0]] = r[1]
+            cur.execute("SELECT COUNT(*) FROM configuracoes WHERE chave LIKE 'LLM_%%' OR chave = 'OLLAMA_URL'")
+            count = cur.fetchone()[0]
+            if count:
+                print(f'[Flask] Configuracoes IA carregadas: {count} chave(s)')
     except Exception as e:
         print(f'[Flask] Aviso ao carregar config IA: {e}')

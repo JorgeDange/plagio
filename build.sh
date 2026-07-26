@@ -87,7 +87,7 @@ try:
         pw_hash = generate_password_hash(ADMIN_PASS).decode('utf-8')
         cur.execute(
             \"INSERT INTO utilizadores (nome, email, password_hash, papel) VALUES (%s, %s, %s, %s)\",
-            ('Administrador', ADMIN_EMAIL, pw_hash, 'admin')
+            ('Administrador', ADMIN_EMAIL, pw_hash, 'administrador')
         )
         db.commit()
         print(f'  ✅ Administrador criado: {ADMIN_EMAIL}')
