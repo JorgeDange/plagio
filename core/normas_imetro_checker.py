@@ -112,7 +112,9 @@ class UnimetroInspector:
 
 
 def get_llm_config(db_path: str = '') -> dict:
-    """Lê as configurações de IA da tabela `configuracoes` via MySQL."""
+    """Lê as configurações de IA — env vars primeiro, depois tabela `configuracoes`."""
+    import os
+    config = {}
     try:
         from app.database.db import get_db
         conn = get_db()
@@ -123,10 +125,23 @@ def get_llm_config(db_path: str = '') -> dict:
         cols = [d[0] for d in cur.description]
         rows = [dict(zip(cols, row)) for row in cur.fetchall()]
         cur.close()
-        return {r["chave"]: r["valor"] for r in rows}
+        config = {r["chave"]: r["valor"] for r in rows}
     except Exception as e:
         logger.error("Erro ao ler config IA da BD: %s", e)
-        return {}
+
+    env_map = {
+        "LLM_ENABLED": "LLM_ENABLED",
+        "LLM_PROVIDER": "LLM_PROVIDER",
+        "LLM_MODEL": "LLM_MODEL",
+        "LLM_API_KEY": "LLM_API_KEY",
+        "OLLAMA_URL": "OLLAMA_URL",
+    }
+    for env_key, cfg_key in env_map.items():
+        val = os.environ.get(env_key)
+        if val is not None:
+            config[cfg_key] = val
+
+    return config
 
 
 def verificar_normas_imetro(
