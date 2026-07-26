@@ -3,7 +3,7 @@ services:
     name: imetro-tfc
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: bash build.sh
     startCommand: gunicorn run:app
     envVars:
       - key: FLASK_SECRET_KEY
