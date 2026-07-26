@@ -69,7 +69,7 @@ def _salvar_config_no_db(config: dict) -> None:
             """
             INSERT INTO configuracoes (chave, valor)
             VALUES (%s, %s)
-            ON DUPLICATE KEY UPDATE valor = VALUES(valor)
+            ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor
             """,
             (chave, str(valor)),
         )
@@ -97,16 +97,16 @@ def _salvar_analises_ia(verificacao_id: int, resultados: list[ResultadoLLM]) -> 
                similaridade_llm, score_labse, justificativa,
                modelo_usado, tempo_ms, erro)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-              plagio           = VALUES(plagio),
-              nivel            = VALUES(nivel),
-              tipo             = VALUES(tipo),
-              similaridade_llm = VALUES(similaridade_llm),
-              score_labse      = VALUES(score_labse),
-              justificativa    = VALUES(justificativa),
-              modelo_usado     = VALUES(modelo_usado),
-              tempo_ms         = VALUES(tempo_ms),
-              erro             = VALUES(erro)
+            ON CONFLICT (verificacao_id, chunk_id) DO UPDATE SET
+              plagio           = EXCLUDED.plagio,
+              nivel            = EXCLUDED.nivel,
+              tipo             = EXCLUDED.tipo,
+              similaridade_llm = EXCLUDED.similaridade_llm,
+              score_labse      = EXCLUDED.score_labse,
+              justificativa    = EXCLUDED.justificativa,
+              modelo_usado     = EXCLUDED.modelo_usado,
+              tempo_ms         = EXCLUDED.tempo_ms,
+              erro             = EXCLUDED.erro
             """,
             (
                 verificacao_id,
