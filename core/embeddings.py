@@ -51,20 +51,18 @@ def _make_request(payload: dict) -> dict:
     }
     session = _get_session()
     try:
+        logger.info(f"[Embeddings] A chamar OpenRouter: url={OPENROUTER_EMBEDDING_URL}, model={payload.get('model')}, key_set={bool(OPENROUTER_API_KEY)}")
         response = session.post(
             OPENROUTER_EMBEDDING_URL,
             headers=headers,
             json=payload,
             timeout=OPENROUTER_TIMEOUT_SECONDS
         )
-        # Se for erro de cliente (4xx) que não devemos retryar, levanta exceção imediatamente
+        logger.info(f"[Embeddings] Resposta HTTP {response.status_code}, content-type={response.headers.get('content-type','?')}")
         if response.status_code in (401, 403, 429):
             logger.error(f"OpenRouter API erro HTTP {response.status_code}: {response.text[:500]}")
             response.raise_for_status()
-        # Para outros 4xx e 5xx, o retry strategy já tratou os 5xx, mas 4xx não são retried
-        # Vamos levantar para que o retry trate os 5xx e nós tratemos os 4xx abaixo
         response.raise_for_status()
-        # Verificar se a resposta é JSON antes de tentar fazer parse
         content_type = response.headers.get("content-type", "")
         if "application/json" not in content_type:
             logger.error(f"OpenRouter API respondeu com content-type '{content_type}': {response.text[:500]}")
@@ -74,8 +72,6 @@ def _make_request(payload: dict) -> dict:
             )
         return response.json()
     except requests.exceptions.RequestException as e:
-        # Se for um erro de conexão, timeout, etc., o retry já foi aplicado pelo adapter
-        # Se ainda assim falhou, levanta exceção
         logger.warning(f"Requisição falhou após {OPENROUTER_MAX_RETRIES} tentativas: {e}")
         raise
     finally:
