@@ -614,7 +614,7 @@ def suspeitos_por_estado():
 def evolucao_media_plagio():
     db = get_db()
     cur = db.cursor()
-    cur.execute('''SELECT TO_CHAR(data, 'YYYY-MM') as mes,
+    cur.execute('''SELECT TO_CHAR(data::date, 'YYYY-MM') as mes,
         AVG(percentagem_plagio) as media FROM verificacoes
         GROUP BY mes ORDER BY mes DESC LIMIT 6''')
     rows = cur.fetchall()

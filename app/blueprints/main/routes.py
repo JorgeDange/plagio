@@ -12,7 +12,6 @@ def dashboard():
     try:
         from flask_login import current_user
 
-        # Carregador: vista limitada — apenas seus envios
         if current_user.is_carregador:
             meus_envios = db.listar_tcc_suspeitos_por_utilizador(current_user.id)
             stats = {
@@ -23,28 +22,33 @@ def dashboard():
             }
             return render_template('main/dashboard.html', stats=stats, meus_envios=meus_envios, is_carregador=True)
 
-        # Admin / Verificador / Aprovador: dashboard completo
-        por_nivel = db.contar_por_nivel()
+        def _safe(fn, default=None):
+            try:
+                return fn()
+            except Exception as e:
+                current_app.logger.error(f'Dashboard [{fn.__name__}]: {e}')
+                return default if default is not None else (0 if default is None else default)
+
         stats = {
-            'tcc_validos': db.contar_tcc_validos(),
-            'tcc_suspeitos': db.contar_tcc_suspeitos(),
-            'total_verificacoes': db.contar_verificacoes(),
-            'plagio_alto': db.contar_plagio_alto(),
-            'cursos_activos': len([c for c in db.listar_cursos_admin() if c['activo']]),
-            'pendentes': db.contar_tcc_suspeitos(estado='pendente'),
-            'pendentes_normas': db.contar_pendentes_normas(),
-            'sem_abnt': db.contar_sem_abnt(),
-            'media_pct': db.media_percentagem(),
-            'por_nivel': por_nivel,
-            'sistema': estado_sistema(),
-            'verificacoes_por_mes': db.verificacoes_por_mes(),
-            'verificacoes_mensais': db.verificacoes_por_mes_aprov_reprov(),
-            'distribuicao_curso': db.distribuicao_por_curso(),
-            'evolucao_media': db.evolucao_media_plagio(),
-            'distribuicao_abnt': db.distribuicao_abnt(),
-            'suspeitos_por_estado': db.suspeitos_por_estado()
+            'tcc_validos': _safe(db.contar_tcc_validos, 0),
+            'tcc_suspeitos': _safe(db.contar_tcc_suspeitos, 0),
+            'total_verificacoes': _safe(db.contar_verificacoes, 0),
+            'plagio_alto': _safe(db.contar_plagio_alto, 0),
+            'cursos_activos': len([c for c in _safe(db.listar_cursos_admin, []) if c.get('activo')]),
+            'pendentes': _safe(lambda: db.contar_tcc_suspeitos(estado='pendente'), 0),
+            'pendentes_normas': _safe(db.contar_pendentes_normas, 0),
+            'sem_abnt': _safe(db.contar_sem_abnt, 0),
+            'media_pct': _safe(db.media_percentagem, 0),
+            'por_nivel': _safe(db.contar_por_nivel, {'Baixo': 0, 'Moderado': 0, 'Alto': 0, 'Critico': 0}),
+            'sistema': _safe(estado_sistema, {'modelo_ok': False, 'chroma_ok': False, 'ram_gb': 0, 'chunks': 0}),
+            'verificacoes_por_mes': _safe(db.verificacoes_por_mes, {}),
+            'verificacoes_mensais': _safe(db.verificacoes_por_mes_aprov_reprov, []),
+            'distribuicao_curso': _safe(db.distribuicao_por_curso, {}),
+            'evolucao_media': _safe(db.evolucao_media_plagio, {}),
+            'distribuicao_abnt': _safe(db.distribuicao_abnt, {}),
+            'suspeitos_por_estado': _safe(db.suspeitos_por_estado, {})
         }
-        verificacoes = db.listar_verificacoes(limite=10)
+        verificacoes = _safe(lambda: db.listar_verificacoes(limite=10), [])
         return render_template('main/dashboard.html', stats=stats, verificacoes=verificacoes, is_carregador=False)
     except Exception as e:
         return render_template('main/dashboard.html',
