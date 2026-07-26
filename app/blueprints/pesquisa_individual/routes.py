@@ -22,7 +22,6 @@ class _EmbeddingAdapter:
         except Exception as e:
             import logging
             logging.error(f"Erro ao gerar embedding: {e}")
-            # Retornar vector zero para evitar crash
             return np.zeros(1024)
     
     def encode_batch(self, texts):
@@ -31,7 +30,7 @@ class _EmbeddingAdapter:
             return []
         try:
             embeddings = gerar_embeddings_lote(texts)
-            return [np.array(e) for e in embeddings]
+            return [np.array(e) if e else np.zeros(1024) for e in embeddings]
         except Exception as e:
             import logging
             logging.error(f"Erro ao gerar embeddings em lote: {e}")

@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_EMBEDDING_MODEL = os.getenv("OPENROUTER_EMBEDDING_MODEL", "qwen/qwen3-embedding-8b")
 OPENROUTER_EMBEDDING_URL = os.getenv("OPENROUTER_EMBEDDING_URL", "https://openrouter.ai/api/v1/embeddings")
-OPENROUTER_TIMEOUT_SECONDS = int(os.getenv("OPENROUTER_TIMEOUT_SECONDS", "30"))
-OPENROUTER_MAX_RETRIES = int(os.getenv("OPENROUTER_MAX_RETRIES", "3"))
+OPENROUTER_TIMEOUT_SECONDS = int(os.getenv("OPENROUTER_TIMEOUT_SECONDS", "8"))
+OPENROUTER_MAX_RETRIES = int(os.getenv("OPENROUTER_MAX_RETRIES", "0"))
+OPENROUTER_MAX_BATCH = int(os.getenv("OPENROUTER_MAX_BATCH", "5"))
 
 class EmbeddingServiceError(Exception):
     """Exceção levantada quando o serviço de embeddings falha após todas as tentativas."""
@@ -137,30 +138,34 @@ def gerar_embeddings_lote(textos: list[str]) -> list[list[float]]:
     # Limitar cada texto a 8000 caracteres
     textos_limitados = [t[:8000] if t else "" for t in textos]
     
-    payload = {
-        "model": OPENROUTER_EMBEDDING_MODEL,
-        "input": textos_limitados
-    }
+    # Dividir em lotes menores para evitar timeout e payloads grandes
+    resultados = []
+    for i in range(0, len(textos_limitados), OPENROUTER_MAX_BATCH):
+        lote = textos_limitados[i:i + OPENROUTER_MAX_BATCH]
+        payload = {
+            "model": OPENROUTER_EMBEDDING_MODEL,
+            "input": lote
+        }
+        try:
+            response_json = _make_request(payload)
+            batch_embeddings = [item["embedding"] for item in response_json["data"]]
+            resultados.extend(batch_embeddings)
+            usage = response_json.get("usage")
+            if usage:
+                tokens = usage.get("total_tokens")
+                if tokens is not None:
+                    logger.info(f"Embeddings lote {i//OPENROUTER_MAX_BATCH +1} gerado. Tokens: {tokens}")
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            logger.error(f"Resposta inválida da API de embeddings: {e}")
+            resultados.extend([[] for _ in lote])
+        except EmbeddingServiceError as e:
+            logger.error(f"Erro no lote {i//OPENROUTER_MAX_BATCH +1}: {e}")
+            resultados.extend([[] for _ in lote])
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Timeout/falha no lote {i//OPENROUTER_MAX_BATCH +1}: {e}")
+            resultados.extend([[] for _ in lote])
     
-    try:
-        response_json = _make_request(payload)
-        # Extrair embeddings na mesma ordem
-        embeddings = [item["embedding"] for item in response_json["data"]]
-        # Log de uso de tokens, se disponível
-        usage = response_json.get("usage")
-        if usage:
-            tokens = usage.get("total_tokens")
-            if tokens is not None:
-                logger.info(f"Embeddings em lote gerados. Tokens usados: {tokens} para {len(textos)} textos.")
-        return embeddings
-    except (KeyError, IndexError, json.JSONDecodeError) as e:
-        logger.error(f"Resposta inválida da API de embeddings em lote: {e}")
-        raise EmbeddingServiceError(f"Resposta inválida da API: {e}")
-    except EmbeddingServiceError:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Falha na chamada à API de embeddings em lote após {OPENROUTER_MAX_RETRIES} tentativas: {e}")
-        raise EmbeddingServiceError(f"Falha na chamada à API de embeddings em lote: {e}")
+    return resultados
 
 # Retrocompatibilidade: modelo = None (antigo LaBSE local removido)
 modelo = None
