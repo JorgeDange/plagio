@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Resultado da Pesquisa Individual — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-list-check' style="margin-right:8px; color:var(--accent)"></i> Resultado da Pesquisa Individual</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Visualização de relatório de pesquisa em fontes externas</p>
+    </div>
+    <a href="{{ url_for('pesquisa_individual.index') }}" class="btn btn-ghost"><i class='ti ti-arrow-left'></i> Voltar às Pesquisas</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Detalhes da Pesquisa</span>
+        <div class="action-group">
+            <a href="{{ url_for('pesquisa_individual.exportar', pesquisa_id=pesquisa.id, formato='pdf') }}" class="btn btn-sm btn-ghost"><i class='ti ti-file-text'></i> PDF</a>
+            <a href="{{ url_for('pesquisa_individual.exportar', pesquisa_id=pesquisa.id, formato='csv') }}" class="btn btn-sm btn-ghost"><i class='ti ti-download'></i> CSV</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+            <div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Data da Pesquisa</span>
+                <strong style="color: var(--text);">{{ pesquisa.criado_em }}</strong>
+            </div>
+            <div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Tipo de Entrada</span>
+                <span class="badge badge-neutral">{{ pesquisa.tipo_entrada|capitalize }}</span>
+            </div>
+            <div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Resultados Suspeitos</span>
+                <strong style="color: var(--danger); font-size: 1.1rem;">{{ pesquisa.total_resultados }}</strong>
+            </div>
+        </div>
+        
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text); display:flex; align-items:center; gap:0.5rem;"><i class='ti ti-zoom-check' style="color: var(--accent);"></i> Trabalhos Encontrados</h3>
+        
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Título / Autores</th>
+                        <th>Fonte</th>
+                        <th>Ano</th>
+                        <th>Semelhança</th>
+                        <th class="text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in resultados %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">{{ r.titulo }}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">{{ r.autores }}</div>
+                        </td>
+                        <td><span class="badge badge-neutral" style="font-size: 0.75rem;">{{ r.fonte|upper }}</span></td>
+                        <td>{{ r.ano or 'N/A' }}</td>
+                        <td>
+                            {% set score_pct = (r.score_semantico * 100)|round|int %}
+                            <span class="badge {% if score_pct >= 85 %}badge-critico{% elif score_pct >= 70 %}badge-moderado{% else %}badge-baixo{% endif %}">
+                                {{ score_pct }}%
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <button type="button" class="btn btn-sm btn-ghost" onclick="toggleResumo({{ loop.index }})">Resumo ▼</button>
+                            {% if r.url %}
+                            <a href="{{ r.url }}" target="_blank" class="btn btn-sm btn-ghost" style="color: var(--accent);">Abrir ↗</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr id="resumo-{{ loop.index }}" style="display: none; background-color: var(--bg);">
+                        <td colspan="6" style="padding: 1.5rem; border-top: none;">
+                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Resumo / Abstract</div>
+                            <div style="font-size: 0.9rem; color: var(--text); line-height: 1.6; margin-bottom: 1rem;">{{ r.resumo or 'Resumo não disponível.' }}</div>
+                            {% if r.frase_origem %}
+                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">Frase do documento pesquisado:</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; background: var(--white); padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius);">"{{ r.frase_origem }}"</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--success);">
+                            <i class='ti ti-shield-check' style="font-size: 3rem; margin-bottom: 0.5rem;"></i><br>
+                            Nenhum resultado suspeito encontrado nesta pesquisa.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleResumo(idx) {
+        const el = document.getElementById('resumo-' + idx);
+        if(el.style.display === 'none') {
+            el.style.display = 'table-row';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

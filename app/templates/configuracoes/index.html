@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Definições do Sistema — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-settings' style="margin-right:8px; color:var(--accent)"></i> Definições do Sistema</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Configurações globais e manutenção</p>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+    <!-- System Status -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class='ti ti-device-desktop'></i> Estado do Sistema</span>
+        </div>
+        <div class="card-body">
+            <div class="detail-list">
+                <div class="detail-row">
+                    <span class="detail-label">Motor de Comparação</span>
+                    <span class="detail-value">
+                        {% if estado.modelo_ok %}
+                        <span class="status-indicator status-ok">Operacional</span>
+                        {% else %}
+                        <span class="status-indicator status-error">Erro</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Repositório de Partes</span>
+                    <span class="detail-value">
+                        {% if estado.chroma_ok %}
+                        <span class="status-indicator status-ok">{{ estado.chunks }} partes</span>
+                        {% else %}
+                        <span class="status-indicator status-error">Erro</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Memória</span>
+                    <span class="detail-value">{{ estado.ram_gb|default(0) }} GB em uso</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detection Parameters -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class='ti ti-target'></i> Definições da Verificação</span>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('configuracoes.guardar') }}">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">Nível Mínimo de Semelhança</label>
+                        <input type="number" name="limiar" class="form-control" value="{{ limiar }}" step="0.01" min="0.5" max="0.99">
+                        <span class="form-hint">Padrão: 0.85</span>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">Tamanho das Partes</label>
+                        <input type="number" name="chunk_size" class="form-control" value="{{ chunk_size }}" min="50" max="500">
+                        <span class="form-hint">Palavras por parte</span>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">Sobreposição</label>
+                        <input type="number" name="chunk_overlap" class="form-control" value="{{ chunk_overlap }}" min="0" max="200">
+                        <span class="form-hint">Palavras em comum entre partes</span>
+                    </div>
+                </div>
+                <h4 class="form-section-title"><i class='ti ti-chart-bar'></i> Níveis de Classificação (%)</h4>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label" style="color:var(--success)">Baixo até</label>
+                        <input type="number" name="nivel_baixo" class="form-control" value="{{ config.get('NIVEL_BAIXO', 10) }}" step="1">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label" style="color:var(--warning)">Moderado até</label>
+                        <input type="number" name="nivel_moderado" class="form-control" value="{{ config.get('NIVEL_MODERADO', 30) }}" step="1">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label" style="color:var(--danger)">Alto até</label>
+                        <input type="number" name="nivel_alto" class="form-control" value="{{ config.get('NIVEL_ALTO', 60) }}" step="1">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class='ti ti-device-floppy'></i> Guardar Definições</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Maintenance -->
+<div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-tool'></i> Manutenção</span>
+    </div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+            <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);">
+                <h4 style="font-size:0.85rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;"><i class='ti ti-upload'></i> Ficheiros Enviados</h4>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">{{ storage.upload_size }}</p>
+                <form method="POST" action="{{ url_for('configuracoes.limpar', tipo='uploads') }}">
+                    <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger)" data-modal-confirm data-modal-message="Limpar todos os uploads?" data-modal-title="Confirmar Limpeza" data-modal-type="btn-danger"><i class='ti ti-trash'></i> Limpar</button>
+                </form>
+            </div>
+            <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);">
+                <h4 style="font-size:0.85rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;"><i class='ti ti-chart-line' style='color:var(--warning)'></i> Relatórios</h4>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">{{ storage.relatorios_size }}</p>
+                <form method="POST" action="{{ url_for('configuracoes.limpar', tipo='relatorios') }}">
+                    <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger)" data-modal-confirm data-modal-message="Limpar todos os relatórios?" data-modal-title="Confirmar Limpeza" data-modal-type="btn-danger"><i class='ti ti-trash'></i> Limpar</button>
+                </form>
+            </div>
+            <div style="background:var(--bg);padding:1rem;border-radius:var(--radius);">
+                <h4 style="font-size:0.85rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem;"><i class='ti ti-database'></i> Base de Dados</h4>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">{{ storage.db_size }}</p>
+                <a href="{{ url_for('configuracoes.exportar_db') }}" class="btn btn-sm btn-ghost"><i class='ti ti-download'></i> Fazer Cópia de Segurança</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pesquisa em Repositórios Externos -->
+<div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-world'></i> Pesquisa em Repositórios Externos</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('configuracoes.guardar') }}">
+            <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Email institucional (cortesia OpenAlex/CrossRef)</label>
+                    <input type="email" name="email_cortesia" class="form-control" value="{{ config.get('EMAIL_CORTESIA', '') }}">
+                    <span class="form-hint">Melhora a velocidade das pesquisas. Não partilhado.</span>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Chave CORE</label>
+                    <input type="text" name="core_key" class="form-control" value="{{ config.get('CORE_KEY', '') }}">
+                    <span class="form-hint"><a href="https://core.ac.uk/services/api" target="_blank">Obter chave gratuita →</a></span>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Chave Semantic Scholar</label>
+                    <input type="text" name="semantic_scholar_key" class="form-control" value="{{ config.get('SEMANTIC_SCHOLAR_KEY', '') }}">
+                    <span class="form-hint"><a href="https://www.semanticscholar.org/product/api" target="_blank">Obter chave gratuita →</a></span>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label">Nível mínimo de alerta padrão (%)</label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <input type="range" name="limiar_externo" class="form-input" min="40" max="95" value="{{ config.get('LIMIAR_EXTERNO', 70) }}" oninput="document.getElementById('limiar_ext_val').textContent = this.value + '%'">
+                    <span id="limiar_ext_val" style="font-weight: bold; color: var(--accent); min-width: 40px;">{{ config.get('LIMIAR_EXTERNO', 70) }}%</span>
+                </div>
+            </div>
+            
+            <h4 class="form-section-title"><i class='ti ti-world'></i> Fontes activas por defeito</h4>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                {% set fontes_ext = config.get('FONTES_EXTERNAS', ['openalex', 'semantic_scholar', 'core', 'crossref']) %}
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="fontes_externas[]" value="openalex" {% if 'openalex' in fontes_ext %}checked{% endif %}> OpenAlex</label>
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="fontes_externas[]" value="semantic_scholar" {% if 'semantic_scholar' in fontes_ext %}checked{% endif %}> Semantic Scholar</label>
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="fontes_externas[]" value="core" {% if 'core' in fontes_ext %}checked{% endif %}> CORE</label>
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="fontes_externas[]" value="crossref" {% if 'crossref' in fontes_ext %}checked{% endif %}> CrossRef</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary"><i class='ti ti-device-floppy'></i> Guardar Definições Externas</button>
+        </form>
+    </div>
+</div>
+
+<!-- IA Configuration -->
+<div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-robot'></i> Análise Inteligente (Verificador Inteligente IMETRO{% if llm.provider and llm.model %} — {{ llm.provider }}/{{ llm.model }}{% endif %}) <span class="badge badge-{{ 'conforme' if llm.enabled == 'true' else 'reprovado' }}">{{ 'Activo' if llm.enabled == 'true' else 'Inactivo' }}</span></span>
+    </div>
+    <div class="card-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+            Verificação avançada com Inteligência Artificial para detecção de paráfrases e traduções.
+            {% if llm.enabled == 'true' and llm.provider and llm.model %}
+            Motor configurado: <strong>{{ llm.provider }}/{{ llm.model }}</strong>.
+            {% endif %}
+        </p>
+        <a href="{{ url_for('analise_ia.configuracoes') }}" class="btn btn-primary"><i class='ti ti-robot'></i> Configurar IA</a>
+    </div>
+</div>
+{% endblock %}

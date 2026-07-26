@@ -1,0 +1,85 @@
+{% macro badge_classificacao(classificacao) %}
+  {% set mapa = {
+    'Sem plágio':        ('badge-ok',      'ti-circle-check'),
+    'Suspeita leve':     ('badge-warn',    'ti-alert-triangle'),
+    'Plágio confirmado': ('badge-danger',  'ti-x-circle'),
+    'Plágio grave':      ('badge-critical','ti-shield-x'),
+  } %}
+  {% set cfg = mapa.get(classificacao, ('badge-ok', 'ti-question-mark')) %}
+  <span class="vf-badge {{ cfg[0] }}">
+    <i class='ti {{ cfg[1] }}'></i>
+    {{ classificacao }}
+  </span>
+{% endmacro %}
+
+{% macro badge_gravidade(gravidade) %}
+  {% if gravidade %}
+    {% set mapa = {
+      'Baixa':   'grav-baixa',
+      'Média':   'grav-media',
+      'Alta':    'grav-alta',
+      'Crítica': 'grav-critica',
+    } %}
+    <span class="vf-grav {{ mapa.get(gravidade, '') }}">{{ gravidade }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro badge_tipo(tipo) %}
+  {% if tipo %}
+    <span class="vf-tipo-badge">
+      <i class='ti ti-copy'></i> {{ tipo }}
+    </span>
+  {% endif %}
+{% endmacro %}
+
+{% macro linha_fonte(match, loop) %}
+  <div class="vf-fonte-row">
+    {% set score = (match.similaridade_max or match.contribuicao_pct or 0) | float %}
+    <div class="vf-fonte-pct">{{ (score * 100) | round | int }}%</div>
+    <div class="vf-fonte-info">
+      <span class="vf-fonte-titulo">
+        {{ match.titulo_fonte or match.fonte_externa or 'Fonte externa' }}
+      </span>
+      {% if match.autor_fonte %}
+        <span class="vf-fonte-meta">{{ match.autor_fonte }}{% if match.ano_fonte %} · {{ match.ano_fonte }}{% endif %}</span>
+      {% endif %}
+    </div>
+    <div class="vf-fonte-bar">
+      <div class="vf-fonte-bar-fill" style="width: {{ (score * 100) | round | int }}%"></div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro trecho_comparado(chunk, index) %}
+  {% set score = (chunk.score or 0) | float %}
+  <div class="vf-trecho-card" id="trecho-{{ index }}">
+    <div class="vf-trecho-header">
+      <span class="vf-trecho-score">{{ (score * 100) | round | int }}%</span>
+      <span class="vf-trecho-pagina">#{{ index }}</span>
+      {% if chunk.ia_tipo %}
+        <span class="vf-trecho-ia-tag">
+          <i class='ti ti-robot'></i> {{ chunk.ia_tipo }}
+        </span>
+      {% endif %}
+    </div>
+    <div class="vf-trecho-textos">
+      <div class="vf-trecho-col">
+        <div class="vf-trecho-col-label suspeito">Texto suspeito</div>
+        <div class="vf-trecho-texto">{{ chunk.texto_suspeito }}</div>
+      </div>
+      <div class="vf-trecho-divisor"></div>
+      <div class="vf-trecho-col">
+        <div class="vf-trecho-col-label original">
+          {{ chunk.fonte_titulo or 'Fonte' }}{% if chunk.fonte_autor %} · {{ chunk.fonte_autor }}{% endif %}
+        </div>
+        <div class="vf-trecho-texto">{{ chunk.texto_original }}</div>
+        {% if chunk.ia_justificativa %}
+          <div class="vf-trecho-justificativa">
+            <i class='ti ti-message'></i>
+            {{ chunk.ia_justificativa }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}

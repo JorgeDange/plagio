@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Configuração de Inteligência Artificial — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-robot' style="margin-right:8px; color:var(--accent)"></i> Configuração de Inteligência Artificial</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">
+            Configure o motor de verificação avançada com Inteligência Artificial (Verificador Inteligente IMETRO)
+            {% if config.get('LLM_PROVIDER') and config.get('LLM_MODEL') %}
+            — <strong>{{ config.get('LLM_PROVIDER') }}/{{ config.get('LLM_MODEL') }}</strong>
+            {% endif %}
+        </p>
+    </div>
+    <a href="{{ url_for('configuracoes.index') }}" class="btn btn-ghost"><i class='ti ti-arrow-left'></i> Voltar</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Verificação Inteligente</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('analise_ia.salvar_configuracoes') }}">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                    <input type="checkbox" name="LLM_ENABLED" id="LLM_ENABLED" {% if config.get('LLM_ENABLED') == 'true' %}checked{% endif %} style="width:1.2rem; height:1.2rem; accent-color:var(--accent);">
+                    <span style="font-weight:600; font-size:1rem;">Activar Análise Avançada por Inteligência Artificial</span>
+                </label>
+                <p class="form-hint" style="margin-left:1.7rem; margin-top:0.25rem;">
+                    Quando activo, trechos com semelhança superior ao <em>nível mínimo</em> definido abaixo serão avaliados individualmente de forma inteligente.
+                </p>
+            </div>
+
+            <div class="form-row" style="margin-bottom:1rem;">
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Motor de Inteligência Artificial</label>
+                    <select name="LLM_PROVIDER" id="LLM_PROVIDER" class="form-control">
+                        <option value="ollama" {% if config.get('LLM_PROVIDER') == 'ollama' %}selected{% endif %}>Ollama (Local / Remoto)</option>
+                        <option value="openai" {% if config.get('LLM_PROVIDER') == 'openai' %}selected{% endif %}>OpenAI</option>
+                        <option value="anthropic" {% if config.get('LLM_PROVIDER') == 'anthropic' %}selected{% endif %}>Anthropic (Claude)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Modelo (Ex: unimetro_analista, gpt-4o)</label>
+                    <input type="text" name="LLM_MODEL" class="form-control" value="{{ config.get('LLM_MODEL', 'unimetro_analista') }}" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Chave de API (API Key)</label>
+                <input type="password" name="LLM_API_KEY" class="form-control" value="{{ config.get('LLM_API_KEY', '') }}" placeholder="Deixe em branco para manter a actual">
+                <span class="form-hint">Necessária para OpenAI, Anthropic e Ollama Remoto.</span>
+            </div>
+
+            <div id="settings_ollama" style="display:block; margin-bottom:1rem;">
+                <div class="form-group">
+                    <label class="form-label">URL do Servidor Ollama</label>
+                    <input type="url" name="OLLAMA_URL" class="form-control" value="{{ config.get('OLLAMA_URL', 'http://localhost:11434') }}">
+                    <span class="form-hint">
+                        Local: <code>http://localhost:11434</code> &nbsp;|&nbsp;
+                        Remoto (Ollama Cloud): <code>https://ollama.com</code> + preencher API Key acima
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Nível Mínimo de Alerta para Análise Inteligente (0.50 a 0.99)</label>
+                    <input type="number" name="LLM_SCORE_THRESHOLD" class="form-control" value="{{ config.get('LLM_SCORE_THRESHOLD', '0.75') }}" step="0.01" min="0.5" max="0.99">
+                    <span class="form-hint">Apenas comparações acima deste valor serão enviadas para verificação avançada.</span>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label class="form-label">Máximo de Trechos por Verificação</label>
+                    <input type="number" name="LLM_MAX_CHUNKS" class="form-control" value="{{ config.get('LLM_MAX_CHUNKS', '15') }}" min="1">
+                    <span class="form-hint">Limite máximo de consultas inteligentes (por relatório).</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary"><i class='ti ti-device-floppy'></i> Guardar Definições</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleProviderSettings() {}
+</script>
+{% endblock %}

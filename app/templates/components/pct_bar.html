@@ -1,0 +1,18 @@
+{# Macro Jinja2 reutilizável — Barra de progresso de percentagem #}
+{# Uso: {% from 'components/pct_bar.html' import pct_bar %}          #}
+{#       {{ pct_bar(33.5, 'Alto') }}                                  #}
+
+{% macro pct_bar(percentagem, nivel='Baixo') %}
+    <div class="pct-bar-container">
+        <div class="pct-bar-track">
+            <div class="pct-bar-fill pct-bar-fill-{{ nivel | lower }}"
+                 style="width: {{ percentagem }}%"
+                 role="progressbar"
+                 aria-valuenow="{{ percentagem }}"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
+            </div>
+        </div>
+        <span class="pct-bar-label">{{ percentagem }}%</span>
+    </div>
+{% endmacro %}

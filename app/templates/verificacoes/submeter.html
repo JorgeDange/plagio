@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% from "macros/forms.html" import campo, campo_select, campo_upload, flash_messages, botao %}
+
+{% block title %}Iniciar Verificação de Plágio — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-file-search' style="margin-right:8px; color:var(--accent)"></i> Iniciar Verificação de Plágio</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Envie trabalhos para comparar contra o repositório académico.</p>
+    </div>
+</div>
+
+{% if job_id %}
+<!-- ESTADO: PROGRESSO EM LOTE -->
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-body" style="text-align: center; padding: 3rem 2rem;">
+        <h2 id="statusTitle" style="margin-bottom: 1.5rem;">A verificar documentos...</h2>
+        
+        <div class="pct-bar-container" style="margin-bottom: 2rem; flex-direction: column; gap: 0.75rem;">
+            <div class="pct-bar-track" style="height: 10px; width: 100%;">
+                <div id="progressBar" class="pct-bar-fill pct-bar-fill-baixo" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+                <span id="progressText">0 / {{ total }}</span>
+                <span id="progressPct">0%</span>
+            </div>
+        </div>
+        
+        <div id="logArea" style="text-align: left; background: var(--bg); padding: 1rem; border-radius: var(--radius); font-family: monospace; font-size: 0.85rem; min-height: 120px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-light);">
+            A iniciar processamento de {{ total }} documento(s)...
+        </div>
+        
+        <div id="btnArea" style="margin-top: 2rem; display: none;">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-ghost"><i class='ti ti-arrow-left'></i> Voltar ao Painel Principal</a>
+        </div>
+    </div>
+</div>
+
+
+
+{% else %}
+<!-- ESTADO: FORMULÁRIO -->
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti ti-file-search'></i> Verificação em Lote</h2>
+        <p>Submeta documentos para verificação direta no repositório.</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" enctype="multipart/form-data" class="form-async">
+        <div class="form-section-title"><i class='ti ti-file'></i> 1. Documento(s) a Verificar</div>
+        
+        {{ campo_upload('ficheiros', 'Ficheiro(s)', tipos='.pdf,.docx,.txt', ajuda='Formatos aceites: PDF, DOCX, TXT. Pode submeter múltiplos de uma vez.', multiplo=True) }}
+        
+        <div class="form-row">
+            {{ campo('titulo', 'Título', ajuda='Opcional') }}
+            {{ campo('autor', 'Autor', ajuda='Opcional') }}
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title"><i class='ti ti-target'></i> 2. Âmbito da Verificação</div>
+
+        {% set opcoes_curso = [] %}
+        {% for c in cursos %}
+            {% set _ = opcoes_curso.append({'valor': c.id, 'texto': c.nome}) %}
+        {% endfor %}
+        {{ campo_select('curso_filtro', 'Filtrar por Curso', opcoes=opcoes_curso, ajuda='Se seleccionado, a comparação será feita apenas contra trabalhos deste curso.') }}
+
+        <div class="form-group">
+            <label style="display: flex; justify-content: space-between;">
+                <span>Nível Mínimo de Semelhança</span>
+                <span id="limiarValue" style="font-weight: bold; color: var(--accent);">0.85</span>
+            </label>
+            <input type="range" name="limiar_plagio" id="limiar_plagio" class="form-input" min="0.50" max="0.95" step="0.01" value="0.85">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+                <span>Rigoroso (0.50)</span>
+                <span>Flexível (0.95)</span>
+            </div>
+        </div>
+        
+        <div class="form-footer" style="margin-top: 2rem;">
+            {{ botao('Iniciar Verificação', icon='ti-rocket', estilo='primary', id='btnSubmeter') }}
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if job_id %}
+<script>
+    const jobId = "{{ job_id }}";
+    const total = {{ total }};
+    const progressText = document.getElementById('progressText');
+    const progressPct = document.getElementById('progressPct');
+    const progressBar = document.getElementById('progressBar');
+    const logArea = document.getElementById('logArea');
+    const statusTitle = document.getElementById('statusTitle');
+    const btnArea = document.getElementById('btnArea');
+    
+    function logMessage(msg) {
+        const div = document.createElement('div');
+        div.textContent = `> ${msg}`;
+        logArea.appendChild(div);
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+    
+    function verificarProgresso() {
+        fetch(`/api/progresso/${jobId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'nao_encontrado') {
+                    logMessage('Erro: job não encontrado.');
+                    return;
+                }
+                
+                const current = data.progresso;
+                const pct = Math.round((current / total) * 100);
+                
+                progressBar.style.width = `${pct}%`;
+                progressText.textContent = `${current} / ${total}`;
+                progressPct.textContent = `${pct}%`;
+                
+                if (data.resultados && data.resultados.length > 0) {
+                    const lastResult = data.resultados[data.resultados.length - 1];
+                    if (data.resultados.length > logArea.childElementCount - 1) { 
+                        if(lastResult.erro) {
+                            logMessage(`✖ Erro em ${lastResult.ficheiro}: ${lastResult.erro}`);
+                        } else {
+                            logMessage(`✔ Verificado: ${lastResult.ficheiro} (${lastResult.pct}% semelhança)`);
+                            
+                            if(data.ultimo_id && btnArea.style.display === 'none') {
+                                btnArea.style.display = 'block';
+                                const a = document.createElement('a');
+                                a.href = `/verificar/resultado/${data.ultimo_id}`;
+                                a.className = 'btn btn-primary';
+                                a.style.marginRight = '10px';
+                                a.innerHTML = '<i class="ti ti-eye"></i> Ver Último Resultado';
+                                btnArea.prepend(a);
+                            }
+                        }
+                    }
+                }
+                
+                if (data.status === 'concluido') {
+                    statusTitle.textContent = "Verificação Concluída";
+                    statusTitle.style.color = "var(--success)";
+                    logMessage(`✔ Todos os ficheiros processados.`);
+                } else {
+                    setTimeout(verificarProgresso, 1000);
+                }
+            })
+            .catch(e => {
+                console.error(e);
+                logMessage(`Erro de conexão ao servidor.`);
+                setTimeout(verificarProgresso, 2000);
+            });
+    }
+    
+    setTimeout(verificarProgresso, 1000);
+</script>
+{% else %}
+<script>
+    const limiarSlider = document.getElementById('limiar_plagio');
+    const limiarValue = document.getElementById('limiarValue');
+    
+    if (limiarSlider && limiarValue) {
+        limiarSlider.addEventListener('input', function() {
+            limiarValue.textContent = Number(this.value).toFixed(2);
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

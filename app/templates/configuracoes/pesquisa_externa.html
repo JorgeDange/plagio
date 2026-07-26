@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Pesquisa Externa — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('configuracoes.index') }}" style="font-size:0.8rem;color:var(--text-muted);display:inline-flex;align-items:center;gap:0.3rem;margin-bottom:0.5rem;">
+            <i class='ti ti-chevron-left'></i> Voltar a Configurações
+        </a>
+        <h1 class="page-title"><i class='ti ti-world' style='color:var(--accent)'></i> Pesquisa Externa (Fase 0)</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Configure os repositórios académicos externos para ampliar a detecção de plágio</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:800px;">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('configuracoes.guardar_pesquisa_externa') }}">
+            
+            <div style="margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border-light);">
+                <label style="display:flex; align-items:center; gap:0.5rem; font-weight:600; cursor:pointer;">
+                    <input type="checkbox" name="fase0_ativa" value="1" {% if config.fase0_ativa == 'true' %}checked{% endif %}>
+                    Activar pesquisa em repositórios externos
+                </label>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem; margin-left:1.5rem;">
+                    Quando activo, o sistema pesquisará trabalhos similares na internet antes da comparação local.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">CORE API Key (Opcional)</label>
+                <input type="text" name="core_api_key" class="form-control" value="{{ config.core_api_key }}" placeholder="Deixe em branco para usar sem autenticação">
+                <span class="form-hint">Melhora os limites de pesquisa para a API CORE (core.ac.uk)</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">APIs Activas</label>
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="apis_activas" value="core" {% if 'core' in config.apis_activas_list %}checked{% endif %}> CORE (200M+ artigos, recomendado para Angola)</label>
+                    <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="apis_activas" value="openalex" {% if 'openalex' in config.apis_activas_list %}checked{% endif %}> OpenAlex (250M+ works, gratuito sem registo)</label>
+                    <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="apis_activas" value="semanticscholar" {% if 'semanticscholar' in config.apis_activas_list %}checked{% endif %}> Semantic Scholar (200M+ papers, bom para ciências)</label>
+                    <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="apis_activas" value="rcaap" {% if 'rcaap' in config.apis_activas_list %}checked{% endif %}> RCAAP (repositório lusófono PT/BR)</label>
+                    <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" name="apis_activas" value="arxiv" {% if 'arxiv' in config.apis_activas_list %}checked{% endif %}> arXiv (ciências exactas e engenharia)</label>
+                </div>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:1.5rem; align-items:center;">
+                <div style="flex:1;">
+                    <label class="form-label">Máx. chunks a pesquisar</label>
+                    <input type="range" name="max_chunks_externos" class="form-input" min="1" max="30" value="{{ config.max_chunks_externos }}" oninput="document.getElementById('maxChunksVal').textContent=this.value">
+                </div>
+                <div style="font-weight:600; width:40px; text-align:center; color:var(--accent);" id="maxChunksVal">{{ config.max_chunks_externos }}</div>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:1.5rem; align-items:center;">
+                <div style="flex:1;">
+                    <label class="form-label">Score mínimo para guardar match</label>
+                    <input type="range" name="score_minimo_externo" class="form-input" min="0.50" max="0.95" step="0.01" value="{{ config.score_minimo_externo }}" oninput="document.getElementById('scoreVal').textContent=this.value">
+                </div>
+                <div style="font-weight:600; width:40px; text-align:center; color:var(--accent);" id="scoreVal">{{ config.score_minimo_externo }}</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Timeout por chamada de API (segundos)</label>
+                <input type="number" name="timeout_api" class="form-control" style="width:100px;" value="{{ config.timeout_api }}">
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:2rem;">
+                <button type="submit" class="btn btn-primary"><i class='ti ti-device-floppy'></i> Guardar Configurações</button>
+                <button type="button" class="btn btn-ghost" id="btnTestar" onclick="testarAPIs()"><i class='ti ti-wifi'></i> Testar APIs</button>
+            </div>
+        </form>
+
+        <div id="resultadoTeste" style="margin-top:1.5rem; display:none;">
+            <h4 style="font-size:0.95rem; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;"><i class='ti ti-activity'></i> Resultados do Teste</h4>
+            <div class="table-responsive">
+                <table class="data-table" style="font-size:0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>API</th>
+                            <th>Status</th>
+                            <th>Tempo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaTeste">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function testarAPIs() {
+    const btn = document.getElementById('btnTestar');
+    const resDiv = document.getElementById('resultadoTeste');
+    const tbody = document.getElementById('tabelaTeste');
+    
+    btn.innerHTML = "<i class='ti ti-loader-2 ti-spin'></i> A testar...";
+    btn.disabled = true;
+    resDiv.style.display = 'none';
+    
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    
+    fetch('{{ url_for("configuracoes.testar_pesquisa_externa") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        tbody.innerHTML = '';
+        if(data.resultados) {
+            data.resultados.forEach(item => {
+                const color = item.status === 'OK' ? 'var(--success)' : (item.status.includes('ERRO') ? 'var(--danger)' : 'var(--warning)');
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.nome}</strong></td>
+                        <td style="color:${color}">${item.status}</td>
+                        <td>${item.tempo_ms} ms</td>
+                    </tr>
+                `;
+            });
+        }
+        resDiv.style.display = 'block';
+    })
+    .catch(e => {
+        showAlert('Erro', 'Erro ao testar APIs: ' + e, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = "<i class='ti ti-wifi'></i> Testar APIs";
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

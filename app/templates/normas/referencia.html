@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Referência Normas — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-books' style="margin-right:8px; color:var(--accent)"></i> Referência Rápida — Normas Académicas</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Guia de conformidade para trabalhos (ABNT e APA 7ª Edição)</p>
+    </div>
+</div>
+
+<!-- ================= ABNT ================= -->
+<h2 style="font-size:1.25rem; font-weight:600; margin-bottom:1rem; color:var(--text); padding-left: 0;">Normas ABNT</h2>
+
+<div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><span class="card-title"><i class='ti ti-ruler-2'></i> NBR 14724 — Estrutura do Trabalho Académico</span></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr><th>Elemento</th><th>Tipo</th><th>Descrição</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="nbr-code">Capa</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Instituição, autor, título, local, ano</td></tr>
+                    <tr><td><span class="nbr-code">Folha de Rosto</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Autor, título, natureza, orientador, local, ano</td></tr>
+                    <tr><td><span class="nbr-code">Dedicatória</span></td><td><span class="badge badge-neutral">Opcional</span></td><td>Homenagem ou dedicatória pessoal</td></tr>
+                    <tr><td><span class="nbr-code">Agradecimentos</span></td><td><span class="badge badge-neutral">Opcional</span></td><td>Agradecimentos a colaboradores</td></tr>
+                    <tr><td><span class="nbr-code">Epígrafe</span></td><td><span class="badge badge-neutral">Opcional</span></td><td>Citação relacionada ao tema</td></tr>
+                    <tr><td><span class="nbr-code">Resumo</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>150-500 palavras + palavras-chave (3-5)</td></tr>
+                    <tr><td><span class="nbr-code">Abstract</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Versão em inglês do resumo</td></tr>
+                    <tr><td><span class="nbr-code">Sumário</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Índice com secções e páginas</td></tr>
+                    <tr><td><span class="nbr-code">Introdução</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Contextualização, objectivos, justificação</td></tr>
+                    <tr><td><span class="nbr-code">Desenvolvimento</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Revisão, metodologia, resultados</td></tr>
+                    <tr><td><span class="nbr-code">Conclusão</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>Síntese dos resultados, recomendações</td></tr>
+                    <tr><td><span class="nbr-code">Referências</span></td><td><span class="badge badge-alto">Obrigatório</span></td><td>NBR 6023 — lista ordenada</td></tr>
+                    <tr><td><span class="nbr-code">Apêndices</span></td><td><span class="badge badge-neutral">Opcional</span></td><td>Material complementar do autor</td></tr>
+                    <tr><td><span class="nbr-code">Anexos</span></td><td><span class="badge badge-neutral">Opcional</span></td><td>Material complementar de terceiros</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:2.5rem;">
+    <div class="card">
+        <div class="card-header"><span class="card-title"><i class='ti ti-notes'></i> NBR 10520 — Citações</span></div>
+        <div class="card-body">
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Citação Directa Curta (até 3 linhas)</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                Segundo Silva (2020, p. 45), "a detecção de plágio é essencial".
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Citação Directa Longa (+3 linhas)</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;margin-left:2rem;">
+                Recuo de 4cm, fonte 10, sem aspas, espaçamento simples. (SILVA, 2020, p. 45-46)
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Citação Indirecta</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;font-family:monospace;">
+                A integridade académica é fundamental (SILVA; SANTOS, 2020).
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><span class="card-title"><i class='ti ti-books'></i> NBR 6023 — Referências</span></div>
+        <div class="card-body">
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Livro</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                SILVA, J. C. <strong>Título do livro</strong>. Local: Editora, 2020.
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Artigo</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                SILVA, J. Título do artigo. <strong>Revista</strong>, v. 10, n. 2, p. 45-60, 2020.
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Site</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;font-family:monospace;">
+                SILVA, J. <strong>Título</strong>. Disponível em: URL. Acesso em: 01 mai. 2026.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= APA ================= -->
+<h2 style="font-size:1.25rem; font-weight:600; margin-bottom:1rem; color:var(--text); padding-left: 0;">Normas APA (7ª Edição)</h2>
+
+<div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><span class="card-title"><i class='ti ti-ruler-2'></i> APA 7 — Estrutura e Formatação Geral</span></div>
+    <div class="card-body">
+        <ul style="padding-left: 1.5rem; font-size: 0.9rem; line-height: 1.8; color: var(--text);">
+            <li><strong>Papel e Margens:</strong> A4 ou Letter, margens de 2,54cm (1 polegada) em todos os lados.</li>
+            <li><strong>Fonte:</strong> Times New Roman 12, Arial 11, Calibri 11, Georgia 11.</li>
+            <li><strong>Espaçamento:</strong> Duplo em todo o documento (incluindo referências), sem espaço extra entre parágrafos.</li>
+            <li><strong>Recuo:</strong> Primeira linha dos parágrafos recuada em 1,27cm (0,5 polegadas).</li>
+            <li><strong>Alinhamento:</strong> À esquerda (não justificado).</li>
+            <li><strong>Paginação:</strong> Número no canto superior direito em todas as páginas.</li>
+        </ul>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+    <div class="card">
+        <div class="card-header"><span class="card-title"><i class='ti ti-notes'></i> APA 7 — Citações no Texto</span></div>
+        <div class="card-body">
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">1 a 2 Autores</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                No texto: Silva e Santos (2020)<br>
+                Parênteses: (Silva & Santos, 2020)
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">3 ou mais Autores</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                (Silva et al., 2020) desde a primeira citação.
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Citação Directa (+40 palavras)</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;font-family:monospace;line-height:1.4;">
+                Recuo de 1,27cm em todo o bloco, sem aspas, espaçamento duplo. O ponto final vem <strong>antes</strong> da referência: <br><br>
+                ...texto do bloco de citação. (Silva, 2020, p. 45)
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><span class="card-title"><i class='ti ti-books'></i> APA 7 — Referências</span></div>
+        <div class="card-body">
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Livro</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                Sobrenome, I. (Ano). <em>Título do livro em itálico</em>. Editora.
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Artigo</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;margin-bottom:1rem;font-family:monospace;">
+                Sobrenome, I. (Ano). Título do artigo. <em>Nome da Revista, Volume</em>(nº), pág-pág. https://doi.org/...
+            </div>
+            <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Site / Página Web</h4>
+            <div style="background:var(--bg);padding:0.75rem;border-radius:var(--radius);font-size:0.82rem;font-family:monospace;">
+                Sobrenome, I. (Ano, dia mês). Título da página. Nome do Site. https://www.url.com
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;font-style:italic;">
+                * Em APA as referências têm recuo francês (hanging indent) de 1,27cm a partir da segunda linha.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

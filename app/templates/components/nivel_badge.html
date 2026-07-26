@@ -1,0 +1,7 @@
+{# Macro Jinja2 reutilizável — Badge de nível de plágio #}
+{# Uso: {% from 'components/nivel_badge.html' import nivel_badge %} #}
+{#       {{ nivel_badge('Alto') }}                                    #}
+
+{% macro nivel_badge(nivel) %}
+    <span class="badge badge-{{ nivel | lower }}">{{ nivel }}</span>
+{% endmacro %}

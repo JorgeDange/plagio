@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="IMETRO TFC v3 — Sistema de Gestão e Detecção de Plágio Académico">
+  <title>{% block title %}IMETRO TFC{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logo.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Playfair+Display:wght@600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header" style="align-items: center; gap: 0.5rem;">
+      <div class="sidebar-logo"
+        style="width: 32px; height: 32px; min-width: 32px; background: none; border-radius: 0; box-shadow: none;">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="IMETRO TFC Logo"
+          style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <div>
+        <h1 class="sidebar-title">IMETRO TFC</h1>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- SEÇÃO: MENU -->
+      <div class="nav-section">Menu</div>
+      <a href="{{ url_for('main.dashboard') }}"
+        class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" id="nav-dashboard">
+        <i class='ti ti-layout-dashboard nav-icon'></i><span>Painel Principal</span>
+      </a>
+
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <a href="{{ url_for('cursos.lista') }}"
+        class="nav-link {% if request.endpoint and 'cursos' in request.endpoint %}active{% endif %}" id="nav-cursos">
+        <i class='ti ti-school nav-icon'></i><span>Cursos e Depts</span>
+      </a>
+      <a href="{{ url_for('orientadores.lista') }}"
+        class="nav-link {% if request.endpoint and 'orientadores' in request.endpoint %}active{% endif %}"
+        id="nav-orientadores">
+        <i class='ti ti-users nav-icon'></i><span>Orientadores</span>
+      </a>
+      {% endif %}
+
+      <!-- SEÇÃO: PRODUTOS -->
+      {% if current_user.is_authenticated %}
+      <div class="nav-section">Produtos</div>
+
+      <!-- ADMIN PRODUTOS -->
+      {% if current_user.is_admin %}
+      <a href="{{ url_for('tcc_validos.lista') }}"
+        class="nav-link {% if request.endpoint and 'tcc_validos.lista' == request.endpoint %}active{% endif %}"
+        id="nav-tcc-validos">
+        <i class='ti ti-archive nav-icon'></i><span>Consultar Arquivo</span>
+      </a>
+      <a href="{{ url_for('tcc_validos.adicionar') }}"
+        class="nav-link {% if request.endpoint == 'tcc_validos.adicionar' %}active{% endif %}" id="nav-tcc-adicionar">
+        <i class='ti ti-file-plus nav-icon'></i><span>Novo Trabalho</span>
+      </a>
+      <a href="{{ url_for('tcc_suspeitos.lista') }}"
+        class="nav-link {% if request.endpoint and 'tcc_suspeitos.lista' == request.endpoint %}active{% endif %}"
+        id="nav-tcc-suspeitos">
+        <i class='ti ti-list-details nav-icon'></i><span>Fila de Verificação</span>
+        {% if stats is defined and stats.pendentes is defined and stats.pendentes > 0 %}
+        <span class="nav-badge-pill">{{ stats.pendentes }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('tcc_suspeitos.submeter') }}"
+        class="nav-link {% if request.endpoint == 'tcc_suspeitos.submeter' %}active{% endif %}" id="nav-submeter">
+        <i class='ti ti-upload nav-icon'></i><span>Enviar Trabalho</span>
+      </a>
+      <a href="{{ url_for('pesquisa_individual.index') }}"
+        class="nav-link {% if request.endpoint and 'pesquisa_individual' in request.endpoint %}active{% endif %}"
+        id="nav-pesquisa-ind">
+        <i class='ti ti-world-search nav-icon'></i><span>Pesquisa Internet</span>
+      </a>
+      <a href="{{ url_for('verificacoes.nova') }}"
+        class="nav-link {% if request.endpoint == 'verificacoes.nova' %}active{% endif %}" id="nav-verificar">
+        <i class='ti ti-zoom-check nav-icon'></i><span>Iniciar Verificação</span>
+      </a>
+      <a href="{{ url_for('verificacoes.historico') }}"
+        class="nav-link {% if request.endpoint == 'verificacoes.historico' %}active{% endif %}" id="nav-historico">
+        <i class='ti ti-file-analytics nav-icon'></i><span>Resultados</span>
+      </a>
+      <a href="{{ url_for('normas.verificar_imetro') }}"
+        class="nav-link {% if request.endpoint == 'normas.verificar_imetro' %}active{% endif %}" id="nav-normas-imetro">
+        <i class='ti ti-certificate nav-icon'></i><span>Normas IMETRO</span>
+      </a>
+      <a href="{{ url_for('normas.verificar') }}"
+        class="nav-link {% if request.endpoint == 'normas.verificar' %}active{% endif %}" id="nav-normas">
+        <i class='ti ti-license nav-icon'></i><span>Verificar Normas</span>
+      </a>
+      <a href="{{ url_for('normas.referencia') }}"
+        class="nav-link {% if request.endpoint == 'normas.referencia' %}active{% endif %}" id="nav-referencia">
+        <i class='ti ti-help-circle nav-icon'></i><span>Referência Rápida</span>
+      </a>
+      <a href="{{ url_for('aprovacoes.historico') }}"
+        class="nav-link {% if request.endpoint and 'aprovacoes' in request.endpoint %}active{% endif %}"
+        id="nav-aprovacoes">
+        <i class='ti ti-shield-check nav-icon'></i><span>Aprovar Trabalhos</span>
+      </a>
+      {% endif %}
+
+      <!-- CARREGADOR PRODUTOS -->
+      {% if current_user.is_carregador %}
+      <a href="{{ url_for('tcc_suspeitos.submeter') }}"
+        class="nav-link {% if request.endpoint == 'tcc_suspeitos.submeter' %}active{% endif %}" id="nav-submeter">
+        <i class='ti ti-upload nav-icon'></i><span>Enviar Trabalho</span>
+      </a>
+      <a href="{{ url_for('tcc_suspeitos.lista') }}"
+        class="nav-link {% if request.endpoint and 'tcc_suspeitos.lista' == request.endpoint %}active{% endif %}"
+        id="nav-meus-envios">
+        <i class='ti ti-list nav-icon'></i><span>Os Meus Envios</span>
+      </a>
+      {% endif %}
+
+      <!-- VERIFICADOR PRODUTOS -->
+      {% if current_user.is_verificador %}
+      <a href="{{ url_for('pesquisa_individual.index') }}"
+        class="nav-link {% if request.endpoint and 'pesquisa_individual' in request.endpoint %}active{% endif %}"
+        id="nav-pesquisa-ind-verif">
+        <i class='ti ti-world-search nav-icon'></i><span>Pesquisa Internet</span>
+      </a>
+      <a href="{{ url_for('tcc_suspeitos.lista') }}"
+        class="nav-link {% if request.endpoint and 'tcc_suspeitos.lista' == request.endpoint %}active{% endif %}"
+        id="nav-tcc-pendentes">
+        <i class='ti ti-loader nav-icon'></i><span>Trabalhos Pendentes</span>
+        {% if stats is defined and stats.pendentes is defined and stats.pendentes > 0 %}
+        <span class="nav-badge-pill">{{ stats.pendentes }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('verificacoes.nova') }}"
+        class="nav-link {% if request.endpoint == 'verificacoes.nova' %}active{% endif %}" id="nav-verificar">
+        <i class='ti ti-zoom-check nav-icon'></i><span>Iniciar Verificação</span>
+      </a>
+      <a href="{{ url_for('verificacoes.historico') }}"
+        class="nav-link {% if request.endpoint == 'verificacoes.historico' %}active{% endif %}" id="nav-historico">
+        <i class='ti ti-file-analytics nav-icon'></i><span>Relatórios</span>
+      </a>
+      <a href="{{ url_for('normas.verificar_imetro') }}"
+        class="nav-link {% if request.endpoint == 'normas.verificar_imetro' %}active{% endif %}"
+        id="nav-normas-imetro-verif">
+        <i class='ti ti-certificate nav-icon'></i><span>Normas IMETRO</span>
+      </a>
+      <a href="{{ url_for('normas.verificar') }}"
+        class="nav-link {% if request.endpoint == 'normas.verificar' %}active{% endif %}" id="nav-normas-verif">
+        <i class='ti ti-license nav-icon'></i><span>Verificar Normas</span>
+      </a>
+      {% endif %}
+
+      <!-- APROVADOR PRODUTOS -->
+      {% if current_user.is_aprovador %}
+      <a href="{{ url_for('pesquisa_individual.index') }}"
+        class="nav-link {% if request.endpoint and 'pesquisa_individual' in request.endpoint %}active{% endif %}"
+        id="nav-pesquisa-ind-aprov">
+        <i class='ti ti-world-search nav-icon'></i><span>Pesquisa Internet</span>
+      </a>
+      <a href="{{ url_for('verificacoes.historico') }}"
+        class="nav-link {% if request.endpoint == 'verificacoes.historico' %}active{% endif %}" id="nav-hist-verif">
+        <i class='ti ti-file-analytics nav-icon'></i><span>Resultados Verif.</span>
+      </a>
+      <a href="{{ url_for('aprovacoes.historico') }}"
+        class="nav-link {% if request.endpoint and 'aprovacoes' in request.endpoint %}active{% endif %}"
+        id="nav-aprovacoes">
+        <i class='ti ti-shield-check nav-icon'></i><span>Aprovar Trabalhos</span>
+      </a>
+      {% endif %}
+
+      {% endif %}
+
+      <!-- SEÇÃO: GERAL -->
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <div class="nav-section">Geral</div>
+      <a href="{{ url_for('utilizadores.lista') }}"
+        class="nav-link {% if request.endpoint and 'utilizadores' in request.endpoint %}active{% endif %}"
+        id="nav-utilizadores">
+        <i class='ti ti-users-group nav-icon'></i><span>Utilizadores</span>
+      </a>
+      <a href="{{ url_for('configuracoes.index') }}"
+        class="nav-link {% if request.endpoint and 'configuracoes' in request.endpoint %}active{% endif %}"
+        id="nav-config">
+        <i class='ti ti-settings nav-icon'></i><span>Configurações</span>
+      </a>
+      {% endif %}
+
+      <div class="nav-spacer"></div>
+    </nav>
+
+    <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 0.75rem;">
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('auth.logout') }}" style="display: flex; align-items: center; gap: 0.75rem; color: var(--accent); font-size: 13px; font-weight: 500; text-decoration: none; padding: 0.25rem 0.5rem;">
+        <i class="ti ti-logout" style="font-size: 18px;"></i>
+        <span>Terminar sessão</span>
+      </a>
+      {% endif %}
+      <div class="sistema-status" id="sistemaStatus">
+        <div class="status-dot online" id="statusDot"></div>
+        <span id="statusTexto">Sistema Online</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-navbar">
+      <div class="navbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu" style="margin-right: 0.5rem;">
+          <i class='ti ti-menu-2'></i>
+        </button>
+        <div class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem;">
+          <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="IMETRO TFC Logo" style="width: 28px; height: 28px; object-fit: contain;">
+          <span style="font-weight: 600; font-size: 15px; color: var(--accent); white-space: nowrap;">IMETRO TFC</span>
+        </div>
+      </div>
+      
+      <div class="navbar-center" style="flex: 1; display: flex; justify-content: center; max-width: 400px; margin: 0 1.5rem;">
+        <div class="search-bar" style="width: 100%;">
+          <i class='ti ti-search'></i>
+          <input type="text" placeholder="Pesquisar...">
+          <span class="search-shortcut">⌘K</span>
+        </div>
+      </div>
+
+      <div class="navbar-right">
+        {% if current_user.is_authenticated %}
+        <button class="nav-action-btn" aria-label="Notificações" style="position: relative;">
+          <i class="ti ti-bell"></i>
+          <span class="badge-dot"></span>
+        </button>
+        <button class="nav-action-btn" aria-label="Ajuda">
+          <i class="ti ti-help"></i>
+        </button>
+        
+        <div class="user-dropdown" style="position:relative;">
+          <div class="user-profile-widget" id="userMenuBtn" style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem;">
+            <div class="user-profile-info">
+              <span class="user-profile-name" style="font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.2;">{{ current_user.nome }}</span>
+              <span class="user-profile-role" style="font-size: 11px; color: var(--text-muted); line-height: 1.2;">{{ current_user.papel|capitalize }}</span>
+            </div>
+            <div class="profile-avatar">
+              <img
+                src="https://ui-avatars.com/api/?name={{ current_user.nome|urlencode }}&background=002b5c&color=fff&rounded=true"
+                alt="{{ current_user.nome }}">
+            </div>
+            <i class="ti ti-chevron-down" style="font-size: 14px; color: var(--text-muted);"></i>
+          </div>
+          
+          <div id="userDropdown"
+            style="display:none; position:absolute; top:100%; right:0; margin-top:0.75rem; background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(0,0,0,0.12); min-width:180px; z-index:200; overflow:hidden;">
+            <a href="{{ url_for('auth.perfil') }}"
+              style="display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; font-size:13px; color:var(--text); transition:background 0.15s; text-decoration:none;"
+              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+              <i class='ti ti-user' style="font-size:16px;"></i> Os Meus Dados
+            </a>
+            <div style="border-top:1px solid var(--border-light);"></div>
+            <a href="{{ url_for('auth.logout') }}"
+              style="display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; font-size:13px; color:var(--danger); transition:background 0.15s; text-decoration:none;"
+              onmouseover="this.style.background='var(--danger-bg)'" onmouseout="this.style.background='transparent'">
+              <i class='ti ti-logout' style="font-size:16px;"></i> Sair
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}" role="alert">
+          <span class="flash-icon">
+            {% if category == 'sucesso' %}
+              <i class='ti ti-circle-check'></i>
+            {% elif category == 'erro' %}
+              <i class='ti ti-circle-x'></i>
+            {% elif category == 'aviso' %}
+              <i class='ti ti-alert-circle'></i>
+            {% else %}
+              <i class='ti ti-info-circle'></i>
+            {% endif %}
+          </span>
+          <span class="flash-text">{{ message }}</span>
+          <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/forms.js') }}"></script>
+  <script>
+    // User dropdown toggle
+    (function () {
+      var btn = document.getElementById('userMenuBtn');
+      var dd = document.getElementById('userDropdown');
+      if (btn && dd) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', function () {
+          dd.style.display = 'none';
+        });
+      }
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+
+  {% include 'components/modal.html' %}
+  <script src="{{ url_for('static', filename='js/modal.js') }}" defer></script>
+</body>
+
+</html>

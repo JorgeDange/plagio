@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Orientadores — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-users' style='color:var(--accent)'></i> Orientadores</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">{{ stats|length }} orientador(es) registado(s)</p>
+    </div>
+    <a href="{{ url_for('orientadores.novo') }}" class="btn btn-primary"><i class='ti ti-plus'></i> Novo Orientador</a>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Titulação</th>
+                    <th>Email</th>
+                    <th>Curso</th>
+                    <th>Nº TCCs</th>
+                    <th class="text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in stats %}
+            <tr>
+                <td class="td-title"><strong>{{ s.orientador.nome }}</strong></td>
+                <td>{{ s.orientador.titulacao or '—' }}</td>
+                <td>{{ s.orientador.email or '—' }}</td>
+                <td>{{ s.orientador.curso_nome or '—' }}</td>
+                <td><span class="badge badge-verificado" style="background: var(--accent-bg); color: var(--accent);">{{ s.total }}</span></td>
+                <td class="action-group">
+                    <a href="{{ url_for('orientadores.editar', id=s.orientador.id) }}" class="btn btn-sm btn-ghost" title="Editar"><i class='ti ti-edit'></i> Editar</a>
+                    <form method="POST" action="{{ url_for('orientadores.remover', id=s.orientador.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger)" title="Remover" data-modal-confirm data-modal-message="Remover orientador?" data-modal-title="Confirmar Remoção" data-modal-type="btn-danger"><i class='ti ti-trash'></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not stats %}
+            <tr>
+                <td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum orientador registado.</td>
+            </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

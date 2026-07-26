@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Trabalhos Aprovados — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-book-bookmark' style="color: var(--accent); margin-right: 0.5rem;"></i> Trabalhos Aprovados</h1>
+        <p class="page-subtitle" style="margin-top:4px; color:var(--text-muted); font-size:13px;">{{ total }} trabalho(s) na base de dados</p>
+    </div>
+    <a href="{{ url_for('tcc_validos.adicionar') }}" class="btn btn-primary"><i class='ti ti-plus'></i> Registar Trabalho</a>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="table-container-header" style="flex-wrap: wrap; gap: 1rem;">
+        <span class="table-container-title">Arquivo de Monografias</span>
+        <div class="table-container-actions" style="flex-wrap: wrap; gap: 0.5rem; width: auto; max-width: 100%;">
+            <form method="GET" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                <select name="curso_id" class="table-select-filter" onchange="this.form.submit()">
+                    <option value="">Todos os Cursos</option>
+                    {% for c in cursos %}
+                    <option value="{{ c.id }}" {% if filtro_curso == c.id %}selected{% endif %}>{{ c.nome }}</option>
+                    {% endfor %}
+                </select>
+                <select name="ano" class="table-select-filter" onchange="this.form.submit()">
+                    <option value="">Todos os Anos</option>
+                    {% for a in anos %}
+                    <option value="{{ a }}" {% if filtro_ano == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+                <div class="table-search-input">
+                    <i class="ti ti-search"></i>
+                    <input type="text" name="q" placeholder="Pesquisar..." value="{{ filtro_q }}">
+                </div>
+                <button type="submit" class="btn btn-sm btn-ghost">Filtrar</button>
+            </form>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Orientador</th>
+                    <th>Curso</th>
+                    <th>Ano</th>
+                    <th>Trechos</th>
+                    <th>Normas</th>
+                    <th class="text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for t in tccs %}
+            <tr>
+                <td class="td-title"><a href="{{ url_for('tcc_validos.detalhe', id=t.id) }}" class="link-title">{{ t.titulo }}</a></td>
+                <td>{{ t.autor }}</td>
+                <td>{{ t.orientador_nome or '—' }}</td>
+                <td>{{ t.curso_nome or '—' }}</td>
+                <td>{{ t.ano_defesa or '—' }}</td>
+                <td><span class="badge badge-verificado" style="background: var(--accent-bg); color: var(--accent);">{{ t.num_chunks }}</span></td>
+                <td>
+                    {% if t.score_abnt >= 80 %}
+                    <span class="badge badge-conforme"><i class='ti ti-circle-check'></i> {{ t.score_abnt|round(0)|int }}%</span>
+                    {% elif t.score_abnt >= 50 %}
+                    <span class="badge badge-parcial"><i class='ti ti-alert-circle'></i> {{ t.score_abnt|round(0)|int }}%</span>
+                    {% else %}
+                    <span class="badge badge-nao-conforme"><i class='ti ti-circle-x'></i> {{ t.score_abnt|round(0)|int }}%</span>
+                    {% endif %}
+                </td>
+                <td class="action-group">
+                    <a href="{{ url_for('tcc_validos.detalhe', id=t.id) }}" class="btn btn-sm btn-ghost" title="Ver Detalhes"><i class='ti ti-eye'></i> Ver</a>
+                    <form method="POST" action="{{ url_for('tcc_validos.remover', id=t.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger)" title="Remover" data-modal-confirm data-modal-message="Remover este trabalho?" data-modal-title="Confirmar Remoção" data-modal-type="btn-danger"><i class='ti ti-trash'></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not tccs %}
+            <tr>
+                <td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum trabalho aprovado encontrado.</td>
+            </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if total_paginas > 1 %}
+<div class="pagination">
+    {% if pagina > 1 %}
+    <a href="?pagina={{ pagina-1 }}&curso_id={{ filtro_curso or '' }}&ano={{ filtro_ano or '' }}&q={{ filtro_q }}">← Anterior</a>
+    {% endif %}
+    {% for p in range(1, total_paginas+1) %}
+    <a href="?pagina={{ p }}&curso_id={{ filtro_curso or '' }}&ano={{ filtro_ano or '' }}&q={{ filtro_q }}" class="{% if p == pagina %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+    {% if pagina < total_paginas %}
+    <a href="?pagina={{ p+1 }}&curso_id={{ filtro_curso or '' }}&ano={{ filtro_ano or '' }}&q={{ filtro_q }}">Seguinte →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

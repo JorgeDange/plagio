@@ -1,0 +1,565 @@
+{% extends "base.html" %}
+{% block title %}Resultado — IMETRO TFC{% endblock %}
+{% block content %}
+{% set v = verificacao %}
+{% set nivel_cls = v.nivel|lower %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('verificacoes.historico') }}" style="font-size:0.8rem;color:var(--text-muted);display:inline-flex;align-items:center;gap:0.3rem;margin-bottom:0.5rem;">
+            <i class='ti ti-chevron-left'></i> Voltar aos Resultados Anteriores
+        </a>
+        <h1 class="page-title"><i class='ti ti-chart-line' style='color:var(--warning)'></i> Resultado da Verificação #{{ v.id }}</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Verificação detalhada do trabalho submetido</p>
+    </div>
+</div>
+
+<!-- Summary Card -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-file-analytics'></i> Resumo da Verificação</span>
+        <span class="badge badge-{{ nivel_cls }}">{{ v.nivel }}</span>
+    </div>
+    <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1.5rem;margin-bottom:1.5rem;">
+            <div>
+                <div style="font-size:1.15rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">{{ v.tcc_titulo or '—' }}</div>
+                <div style="font-size:0.85rem;color:var(--text-muted);display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;">
+                    <span><i class='ti ti-user' style="margin-right:0.25rem"></i> {{ v.tcc_autor or '—' }}</span>
+                    <span><i class='ti ti-book' style="margin-right:0.25rem"></i> {{ v.curso_nome_filtro or 'Todos os Cursos' }}</span>
+                    <span><i class='ti ti-calendar' style="margin-right:0.25rem"></i> {{ v.data }}</span>
+                    {% if v.analise_ia_ok %}
+                    <span class="badge badge-{{ (v.nivel_ia or 'baixo')|lower }}" style="font-size:0.7rem;"><i class='ti ti-robot'></i> Análise Inteligente: {{ v.nivel_ia|title }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="text-align:center;min-width:120px;">
+                <div style="font-size:2.8rem;font-weight:700;color:var(--{{ 'success' if nivel_cls=='baixo' else ('warning' if nivel_cls=='moderado' else 'danger') }});">{{ v.percentagem_plagio }}%</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:500;margin-top:0.25rem;">Semelhança Detectada</div>
+            </div>
+        </div>
+        <div class="pct-bar-track" style="height:10px;border-radius:50px;background:var(--border-light);overflow:hidden;">
+            <div class="pct-bar-fill pct-bar-fill-{{ nivel_cls }}" style="width:{{ v.percentagem_plagio }}%;height:100%;border-radius:50px;transition:width 1.5s ease;"></div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <a href="{{ url_for('verificacoes.ver_veredicto', verificacao_id=v.id) }}"
+               class="btn btn-veredicto" style="font-size:0.85rem;">
+              <i class='ti ti-file-text'></i> Relatório Final
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="kpi-grid" style="margin-bottom:1.5rem;">
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Trechos Analisados</span>
+            <i class="ti ti-layers-intersect kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ v.num_chunks_total }}</span>
+        </div>
+        <div class="kpi-row-bottom">Total de partes do documento</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Correspondências</span>
+            <i class="ti ti-alert-circle kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value" style="color:var(--danger)">{{ v.num_chunks_suspeitos }}</span>
+        </div>
+        <div class="kpi-row-bottom">Similares encontrados</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Nível Mínimo</span>
+            <i class="ti ti-target kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ v.limiar_usado }}</span>
+        </div>
+        <div class="kpi-row-bottom">Limiar de alerta usado</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Duração</span>
+            <i class="ti ti-clock kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ v.duracao_segundos }}s</span>
+        </div>
+        <div class="kpi-row-bottom">Tempo de processamento</div>
+    </div>
+</div>
+
+<!-- Actions Card -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-click'></i> Acções</span>
+    </div>
+    <div class="card-body">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <a href="{{ url_for('verificacoes.descarregar', id=v.id) }}" class="btn btn-primary"><i class='ti ti-download'></i> Descarregar Relatório</a>
+            {% if v.tcc_suspeito_id %}
+            <a href="{{ url_for('tcc_suspeitos.detalhe', id=v.tcc_suspeito_id) }}" class="btn btn-ghost"><i class='ti ti-file-search'></i> Ver Trabalho Analisado</a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('verificacoes.remover', id=v.id) }}" style="margin-left:auto;">
+                <button type="submit" class="btn btn-ghost" style="color:var(--danger);border-color:rgba(239,68,68,0.3);" data-modal-confirm data-modal-message="Tem a certeza que deseja remover esta verificação?" data-modal-title="Confirmar Remoção" data-modal-type="btn-danger"><i class='ti ti-trash'></i> Remover</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Separadores da Análise -->
+<div class="tabs-container" style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+    <div style="display: flex; gap: 1.5rem;">
+        <button onclick="mostrarSeparador('originalidade')" id="btn-tab-originalidade" class="tab-btn active" style="background:none; border:none; padding: 0.75rem 1rem; border-bottom: 3px solid var(--accent); color: var(--accent); font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <i class='ti ti-zoom-check'></i> Originalidade e Plágio
+        </button>
+        {% if resultado_normas %}
+        <button onclick="mostrarSeparador('normas')" id="btn-tab-normas" class="tab-btn" style="background:none; border:none; padding: 0.75rem 1rem; border-bottom: 3px solid transparent; color: var(--text-muted); font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <i class='ti ti-book-bookmark'></i> Normas IMETRO
+            <span class="badge badge-{{ 'conforme' if resultado_normas.classificacao_final == 'CONFORME' else ('parcial' if resultado_normas.classificacao_final == 'COM_RESSALVAS' else 'nao-conforme') }}" style="font-size: 0.7rem; padding: 0.15rem 0.4rem;">
+                {{ resultado_normas.classificacao_final | replace("_", " ") | title }}
+            </span>
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div id="tab-originalidade">
+<!-- Grid: Fontes + ABNT/Secções -->
+<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+
+    <!-- Fontes (Matches) -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class='ti ti-books'></i> Trabalhos com Semelhança</span>
+            <span class="badge badge-neutral">{{ matches|length }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fonte</th>
+                        <th>Trabalho Original</th>
+                        <th>Trechos</th>
+                        <th>Semelhança Máx.</th>
+                        <th>Contribuição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in matches %}
+                    <tr>
+                        <td>
+                            {% set fonte = m.fonte_origem or 'local' %}
+                            {% if fonte == 'core' %}
+                            <span class="badge badge-conforme"><i class='ti ti-database' style="margin-right:3px;"></i> CORE</span>
+                            {% elif fonte == 'openalex' %}
+                            <span class="badge badge-info"><i class='ti ti-book' style="margin-right:3px;"></i> OpenAlex</span>
+                            {% elif fonte == 'serper' %}
+                            <span class="badge badge-warning"><i class='ti ti-world' style="margin-right:3px;"></i> Google</span>
+                            {% else %}
+                            <span class="badge badge-neutral"><i class='ti ti-school' style="margin-right:3px;"></i> Local</span>
+                            {% endif %}
+                        </td>
+                        <td class="td-title">
+                            {% if m.url_fonte %}
+                            <a href="{{ m.url_fonte }}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:500;">{{ m.titulo_fonte or m.tcc_valido_titulo or '—' }} <i class='ti ti-external-link' style="font-size:0.7rem;"></i></a>
+                            {% elif m.tcc_valido_id %}
+                            <a href="{{ url_for('tcc_validos.detalhe', id=m.tcc_valido_id) }}" style="color:var(--accent);font-weight:500;">{{ m.titulo_fonte or m.tcc_valido_titulo }}</a>
+                            {% else %}
+                            {{ m.titulo_fonte or m.tcc_valido_titulo or '—' }}
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge-neutral">{{ m.num_chunks_comuns }}</span></td>
+                        <td>{{ (m.similaridade_max * 100)|round(1) }}%</td>
+                        <td><strong>{{ m.contribuicao_pct }}%</strong></td>
+                    </tr>
+                    {% if m.trecho_similar or m.trecho_original %}
+                    <tr>
+                        <td colspan="5" style="padding:0.75rem 1.25rem;background:var(--bg);">
+                            <div class="chunk-compare" style="margin:0;">
+                                {% if m.trecho_original %}
+                                <div class="chunk-side chunk-suspect" style="border:1px solid var(--danger);border-radius:var(--radius);padding:0.75rem;">
+                                    <div class="chunk-header"><i class='ti ti-alert-circle' style='color:var(--danger)'></i> Texto em Análise</div>
+                                    <div style="font-size:0.85rem;">{{ m.trecho_original[:400] }}{% if m.trecho_original|length > 400 %}...{% endif %}</div>
+                                </div>
+                                {% endif %}
+                                {% if m.trecho_similar %}
+                                <div class="chunk-side chunk-origin" style="border:1px solid var(--success);border-radius:var(--radius);padding:0.75rem;">
+                                    <div class="chunk-header"><i class='ti ti-book-bookmark' style='color:var(--success)'></i> Trecho da Fonte</div>
+                                    <div style="font-size:0.85rem;">{{ m.trecho_similar[:400] }}{% if m.trecho_similar|length > 400 %}...{% endif %}</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% if not matches %}
+                    <tr>
+                        <td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted);">
+                            <i class='ti ti-circle-check' style="font-size:1.5rem;color:var(--success);display:block;margin-bottom:0.5rem;"></i>
+                            Nenhuma semelhança com outros trabalhos encontrada.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sidebar: ABNT + Secções -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+        <!-- ABNT Nível de Semelhança -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class='ti ti-ruler-2'></i> Norma ABNT</span>
+            </div>
+            <div class="card-body" style="text-align:center;padding:1.5rem;">
+                <div style="font-size:2.2rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">{{ v.score_abnt|round(0)|int }}%</div>
+                <span class="badge {% if v.score_abnt >= 80 %}badge-conforme{% elif v.score_abnt >= 50 %}badge-parcial{% else %}badge-nao-conforme{% endif %}" style="font-size:0.78rem;padding:0.3rem 0.85rem;">
+                    {% if v.score_abnt >= 80 %}Conforme{% elif v.score_abnt >= 50 %}Parcial{% else %}Não Conforme{% endif %}
+                </span>
+                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">NBR 14724 / NBR 10520</p>
+            </div>
+        </div>
+
+        <!-- APA Nível de Semelhança -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class='ti ti-book-2'></i> Norma APA</span>
+            </div>
+            <div class="card-body" style="text-align:center;padding:1.5rem;">
+                <div style="font-size:2.2rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">{{ (v.score_apa or 0)|round(0)|int }}%</div>
+                <span class="badge {% if (v.score_apa or 0) >= 80 %}badge-conforme{% elif (v.score_apa or 0) >= 50 %}badge-parcial{% else %}badge-nao-conforme{% endif %}" style="font-size:0.78rem;padding:0.3rem 0.85rem;">
+                    {% if (v.score_apa or 0) >= 80 %}Conforme{% elif (v.score_apa or 0) >= 50 %}Parcial{% else %}Não Conforme{% endif %}
+                </span>
+                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.6rem;">APA 7ª Edição</p>
+            </div>
+        </div>
+
+        <!-- Distribuição por Secção -->
+        {% if seccoes %}
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class='ti ti-map-pin'></i> Distribuição por Secção</span>
+            </div>
+            <div class="card-body">
+                {% for sec, data in seccoes.items() %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;{% if not loop.last %}border-bottom:1px dashed var(--border-light);{% endif %}">
+                    <span style="font-size:0.85rem;text-transform:capitalize;font-weight:500;">
+                        <i class='ti ti-chevron-right' style="color:var(--accent);margin-right:0.25rem;"></i> {{ sec }}
+                    </span>
+                    <span class="badge badge-alto">{{ data.suspeitos }} trechos</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- Matches Externos -->
+{% if fontes_externas %}
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-world'></i> Trabalhos Similares na Internet (Etapa 1)</span>
+        <span class="badge badge-neutral">{{ fontes_externas|length }}</span>
+    </div>
+    <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            {% for f in fontes_externas %}
+            <div style="border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;background:var(--white);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px dashed var(--border-light);">
+                    <span style="font-size:0.8rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                        <span class="badge badge-conforme"><i class='ti ti-cloud' style="margin-right:4px;"></i> {{ f.api_fonte }}</span>
+                        <span style="color:var(--text-muted);"><i class='ti ti-calendar'></i> {{ f.ano or 'S/D' }}</span>
+                        <span style="color:var(--text-muted);"><i class='ti ti-user'></i> {{ f.autores or 'Desconhecido' }}</span>
+                    </span>
+                    <span class="badge badge-{{ 'alto' if f.score_similaridade >= 0.90 else 'moderado' }}" style="font-size:0.85rem;">{{ (f.score_similaridade * 100)|round(1) }}%</span>
+                </div>
+                
+                <h4 style="font-size:1.05rem;color:var(--text);margin-bottom:1rem;">{{ f.titulo_externo }}</h4>
+                
+                <div class="chunk-compare">
+                    <div class="chunk-side chunk-suspect">
+                        <div class="chunk-header"><i class='ti ti-alert-circle' style='color:var(--danger)'></i> Texto em Análise</div>
+                        {{ f.chunk_texto }}
+                    </div>
+                    <div class="chunk-side chunk-origin">
+                        <div class="chunk-header"><i class='ti ti-book-bookmark' style='color:var(--success)'></i> Resumo da Internet</div>
+                        {{ f.resumo_externo[:500] }}{% if f.resumo_externo|length > 500 %}...{% endif %}
+                    </div>
+                </div>
+                
+                {% if f.url_externo %}
+                <div style="margin-top:1rem;text-align:right;">
+                    <a href="{{ f.url_externo }}" target="_blank" class="btn btn-sm btn-ghost" style="color:var(--accent);border-color:rgba(0,43,92,0.3);"><i class='ti ti-external-link'></i> Ver fonte original ↗</a>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Observações -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-notes'></i> Observações do Avaliador</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('verificacoes.observacao', id=v.id) }}">
+            <textarea name="observacoes" class="form-control" rows="3" placeholder="Adicione notas ou comentários sobre esta análise..." style="margin-bottom:0.75rem;">{{ v.observacoes or '' }}</textarea>
+            <button type="submit" class="btn btn-sm btn-ghost"><i class='ti ti-device-floppy'></i> Guardar Observação</button>
+        </form>
+    </div>
+</div>
+
+<!-- Chunks Detail -->
+{% if chunks %}
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-microscope'></i> Comparação de Textos Semelhantes</span>
+        <span class="badge badge-neutral">Primeiras {{ [chunks|length, 20]|min }}</span>
+    </div>
+    <div class="card-body">
+        <div class="chunks-list" style="display:flex;flex-direction:column;gap:1.25rem;">
+            {% for c in chunks[:20] %}
+            <div class="chunk-item" style="border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;background:var(--white);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px dashed var(--border-light);">
+                    <span style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                        <span><i class='ti ti-hash' style="color:var(--accent)"></i> Trecho {{ c.posicao_chunk }}</span>
+                        <span><i class='ti ti-map-pin' style="color:var(--warning)"></i> {{ c.secao_estimada or '—' }}</span>
+                        <span><i class='ti ti-book' style="color:var(--info)"></i> {{ c.tcc_valido_titulo or '—' }}</span>
+                    </span>
+                    <span class="badge badge-{{ 'alto' if c.similaridade >= 0.95 else ('moderado' if c.similaridade >= 0.9 else 'baixo') }}" style="font-size:0.8rem;">{{ (c.similaridade * 100)|round(1) }}%</span>
+                </div>
+                <div class="chunk-compare">
+                    <div class="chunk-side chunk-suspect">
+                        <div class="chunk-header"><i class='ti ti-alert-circle' style='color:var(--danger)'></i> Texto em Análise</div>
+                        {{ c.texto_suspeito[:300] }}{% if c.texto_suspeito|length > 300 %}...{% endif %}
+                    </div>
+                    <div class="chunk-side chunk-origin">
+                        <div class="chunk-header"><i class='ti ti-book-bookmark' style='color:var(--success)'></i> Texto Original</div>
+                        {{ c.texto_origem[:300] }}{% if c.texto_origem|length > 300 %}...{% endif %}
+                    </div>
+                </div>
+                {% if c.ia_modelo %}
+                <div style="margin-top:1rem;padding:1rem;background:var(--bg);border-radius:var(--radius);border:1px solid var(--{{ 'danger' if c.ia_plagio else 'success' }});">
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+                        <i class='ti ti-robot' style="font-size:1.2rem;color:var(--accent);"></i>
+                        <span style="font-weight:600;font-size:0.9rem;">Verificador Inteligente IMETRO</span>
+                        <span class="badge badge-{{ (c.ia_nivel or 'baixo')|lower }}">{{ c.ia_tipo or 'Sem Plágio' }} ({{ c.ia_sim_llm }}%)</span>
+                    </div>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">{{ c.ia_justificativa }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+</div> <!-- fecho do tab-originalidade -->
+
+{% if resultado_normas %}
+<!-- NOVO: Separador de Normas IMETRO -->
+<div id="tab-normas" style="display: none;">
+    <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header">
+            <span class="card-title">
+                <i class='ti ti-shield-check'></i> Avaliação de Conformidade Normativa
+            </span>
+            <span class="badge badge-{{ 'conforme' if resultado_normas.classificacao_final == 'CONFORME' else ('parcial' if resultado_normas.classificacao_final == 'COM_RESSALVAS' else 'nao-conforme') }}">
+                {{ resultado_normas.classificacao_final|replace('_', ' ')|title }}
+            </span>
+        </div>
+        <div class="card-body">
+            <!-- Dashboard de Progresso -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                
+                <!-- Analise Local -->
+                <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1rem; text-transform: uppercase;">
+                        Verificação Estrutural (Expressões Regulares)
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--accent);">
+                            {{ resultado_normas.local.percentagem|round|int }}%
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: var(--success); font-weight: 500;">
+                                <i class='ti ti-circle-check'></i> {{ resultado_normas.local.regras_ok }} Regras Conformes
+                            </div>
+                            <div style="color: var(--danger); font-weight: 500;">
+                                <i class='ti ti-circle-x'></i> {{ resultado_normas.local.regras_falhou }} Não Conformes
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analise IA -->
+                <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);">
+                    <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1rem; text-transform: uppercase; display: flex; justify-content: space-between;">
+                        Verificação Semântica (IA)
+                        {% if resultado_normas.ia.executada %}
+                        <span class="badge badge-conforme"><i class='ti ti-robot'></i> Analisado</span>
+                        {% else %}
+                        <span class="badge badge-neutral">Não Executado</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if resultado_normas.ia.executada %}
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="font-size: 3rem; font-weight: 700; color: {{ 'var(--danger)' if resultado_normas.ia.tem_bloqueante else 'var(--accent)' }};">
+                            {{ resultado_normas.ia.pontuacao|round|int }}%
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                {{ resultado_normas.ia.classificacao|replace('_', ' ')|title }}
+                            </div>
+                            <div style="color: var(--warning); font-size: 0.85rem;">
+                                {{ resultado_normas.ia.num_infracoes }} Infracções detectadas
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; color: var(--text-muted); padding: 1rem 0;">
+                        <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            A análise aprofundada não foi executada para este trabalho.
+                        </p>
+                        {% if llm_config.get('LLM_ENABLED') == 'true' and llm_config.get('LLM_MODEL') %}
+                        <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                            Motor: <strong>{{ llm_config.get('LLM_PROVIDER', 'ollama') }}/{{ llm_config.get('LLM_MODEL') }}</strong>
+                        </p>
+                        {% endif %}
+                        <button class="btn btn-sm btn-primary" onclick="executarIA({{ v.id }})">
+                            <i class='ti ti-player-play'></i> Iniciar Análise IA Agora
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if resultado_normas.resumo_problemas %}
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--warning-bg); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius);">
+                <strong style="color: #92400E;"><i class='ti ti-bulb'></i> Síntese:</strong> 
+                {{ resultado_normas.resumo_problemas }}
+            </div>
+            {% endif %}
+
+            <!-- Tabela de Infracções -->
+            <h4 style="margin-bottom: 1rem; color: var(--text); display:flex; align-items:center; gap:0.5rem;"><i class='ti ti-list-check'></i> Detalhe das Infracções</h4>
+            
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Gravidade</th>
+                            <th>Origem</th>
+                            <th>Descrição do Erro</th>
+                            <th>Elemento</th>
+                            <th>Recomendação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inf in resultado_normas.infracoes %}
+                        <tr>
+                            <td>
+                                {% set badge_cor = 'danger' if inf.gravidade == 'BLOQUEANTE' else ('warning' if inf.gravidade == 'GRAVE' else 'info') %}
+                                <span class="badge badge-{{ badge_cor }}">{{ inf.gravidade }}</span>
+                            </td>
+                            <td>
+                                {% if inf.origem == 'ia' %}
+                                <span class="badge badge-conforme"><i class='ti ti-robot'></i> IA</span>
+                                {% else %}
+                                <span class="badge badge-neutral"><i class='ti ti-code'></i> Local</span>
+                                {% endif %}
+                            </td>
+                            <td style="max-width: 300px; white-space: normal;">
+                                <strong>{{ inf.descricao }}</strong>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                    Ref: {{ inf.norma_violada }}
+                                </div>
+                            </td>
+                            <td>{{ inf.elemento }}</td>
+                            <td style="max-width: 250px; white-space: normal; font-size: 0.85rem;">
+                                {{ inf.recomendacao }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem;">
+                                <i class='ti ti-circle-check' style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem; display: block;"></i>
+                                Nenhuma infracção normativa encontrada no documento.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarSeparador(tabName) {
+    document.getElementById('tab-originalidade').style.display = tabName === 'originalidade' ? 'block' : 'none';
+    
+    var tabNormas = document.getElementById('tab-normas');
+    if (tabNormas) tabNormas.style.display = tabName === 'normas' ? 'block' : 'none';
+    
+    document.getElementById('btn-tab-originalidade').style.color = tabName === 'originalidade' ? 'var(--accent)' : 'var(--text-muted)';
+    document.getElementById('btn-tab-originalidade').style.borderBottomColor = tabName === 'originalidade' ? 'var(--accent)' : 'transparent';
+    
+    var btnNormas = document.getElementById('btn-tab-normas');
+    if (btnNormas) {
+        btnNormas.style.color = tabName === 'normas' ? 'var(--accent)' : 'var(--text-muted)';
+        btnNormas.style.borderBottomColor = tabName === 'normas' ? 'var(--accent)' : 'transparent';
+    }
+}
+
+function executarIA(verificacaoId) {
+    openModal(
+        'Análise por IA',
+        'Deseja iniciar a análise de normas por Inteligência Artificial? Este processo pode demorar 1-2 minutos.',
+        'Iniciar Análise',
+        'btn-primary',
+        function() {
+            setTimeout(function() {
+                showAlert('Análise Iniciada', 'Análise iniciada. Por favor, aguarde...', 'info');
+            }, 250);
+            
+            fetch(`/verificacoes/${verificacaoId}/normas-ia`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    window.location.reload();
+                } else {
+                    showAlert('Erro na Análise', 'Erro na análise: ' + (data.erro || 'Erro desconhecido'), 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Erro de Comunicação', 'Erro de comunicação: ' + error, 'error');
+            });
+        }
+    );
+}
+</script>
+{% endif %}
+
+{% endblock %}

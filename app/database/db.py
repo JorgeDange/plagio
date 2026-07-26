@@ -1,37 +1,46 @@
-# IMETRO TFC v3 — Camada de Base de Dados (MySQL)
+# IMETRO TFC v3 — Camada de Base de Dados (PostgreSQL)
 
 import os
 import json
-import mysql.connector
+import psycopg2
+import psycopg2.extras
 from datetime import datetime
 from flask import g
 
 
-MYSQL_CONFIG = {
-    'host': os.getenv('MYSQL_HOST', 'localhost'),
-    'user': os.getenv('MYSQL_USER', 'root'),
-    'password': os.getenv('MYSQL_PASSWORD', 'devs'),
-    'database': os.getenv('MYSQL_DB', 'plagio'),
-    'charset': 'utf8mb4',
-    'autocommit': False,
-}
+def get_db_config():
+    """Obtém configuração da BD de variáveis de ambiente ou DATABASE_URL."""
+    database_url = os.getenv('DATABASE_URL')
+    if database_url:
+        return database_url
+    return {
+        'host': os.getenv('PGHOST', 'localhost'),
+        'user': os.getenv('PGUSER', 'postgres'),
+        'password': os.getenv('PGPASSWORD', ''),
+        'dbname': os.getenv('PGDATABASE', 'plagio'),
+        'port': os.getenv('PGPORT', '5432'),
+    }
 
 
 def init_db(db_path=None) -> None:
-    """MySQL: tabelas já criadas via migração. Nada a fazer."""
+    """PostgreSQL: tabelas já criadas via migração. Nada a fazer."""
     pass
 
 
 def get_db():
-    """Abre/reutiliza conexão MySQL no contexto do pedido."""
+    """Abre/reutiliza conexão PostgreSQL no contexto do pedido."""
     if 'db' not in g:
-        g.db = mysql.connector.connect(**MYSQL_CONFIG)
-        g.db.row_factory = None
+        config = get_db_config()
+        if isinstance(config, str):
+            g.db = psycopg2.connect(config)
+        else:
+            g.db = psycopg2.connect(**config)
+        g.db.autocommit = False
     return g.db
 
 
 def close_db(e=None):
-    """Fecha a conexão MySQL no contexto do pedido."""
+    """Fecha a conexão PostgreSQL no contexto do pedido."""
     db = g.pop('db', None)
     if db is not None:
         db.close()
@@ -59,10 +68,11 @@ def inserir_curso(nome, codigo=None, departamento=None, descricao=None, activo=1
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        'INSERT INTO cursos (nome, codigo, departamento, descricao, data_criacao, activo) VALUES (%s,%s,%s,%s,%s,%s)',
+        'INSERT INTO cursos (nome, codigo, departamento, descricao, data_criacao, activo) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id',
         (nome, codigo, departamento, descricao, datetime.now().strftime('%Y-%m-%d %H:%M'), activo))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def editar_curso(id, nome, codigo=None, departamento=None, descricao=None, activo=1):
@@ -115,10 +125,11 @@ def remover_curso(id):
 def inserir_orientador(nome, email=None, titulacao=None, curso_id=None):
     db = get_db()
     cur = db.cursor()
-    cur.execute('INSERT INTO orientadores (nome, email, titulacao, curso_id) VALUES (%s,%s,%s,%s)',
+    cur.execute('INSERT INTO orientadores (nome, email, titulacao, curso_id) VALUES (%s,%s,%s,%s) RETURNING id',
                 (nome, email, titulacao, curso_id))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def editar_orientador(id, nome, email=None, titulacao=None, curso_id=None):
@@ -171,14 +182,15 @@ def inserir_tcc_valido(titulo, autor, curso_id, curso_nome='', orientador_id=Non
          ano_defesa, semestre, palavras_chave, resumo, nota_final,
          data_indexacao, num_chunks, caminho_ficheiro, chroma_id,
          tem_capa, tem_folha_rosto, tem_resumo, tem_abstract, tem_sumario, tem_referencias, score_abnt)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id''',
         (titulo, autor, orientador_id, orientador_nome, curso_id, curso_nome,
          ano_defesa, semestre, palavras_chave, resumo, nota_final,
          datetime.now().strftime('%Y-%m-%d %H:%M'), num_chunks, caminho, chroma_id,
          flags.get('capa', 0), flags.get('folha_rosto', 0), flags.get('resumo', 0),
          flags.get('abstract', 0), flags.get('sumario', 0), flags.get('referencias', 0), score_abnt))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def listar_tcc_validos(curso_id=None, ano=None, pesquisa=None, pagina=1, por_pagina=20):
@@ -190,7 +202,7 @@ def listar_tcc_validos(curso_id=None, ano=None, pesquisa=None, pagina=1, por_pag
     if ano:
         where.append('t.ano_defesa = %s'); params.append(ano)
     if pesquisa:
-        where.append("(t.titulo LIKE %s OR t.autor LIKE %s)"); params.extend([f'%{pesquisa}%'] * 2)
+        where.append("(t.titulo ILIKE %s OR t.autor ILIKE %s)"); params.extend([f'%{pesquisa}%'] * 2)
     clause = ('WHERE ' + ' AND '.join(where)) if where else ''
     cur.execute(f'SELECT COUNT(*) as cnt FROM tcc_validos t {clause}', params)
     total = cur.fetchone()[0]
@@ -250,11 +262,12 @@ def inserir_tcc_suspeito(autor, caminho_ficheiro, titulo='', orientador_id=None,
     cur.execute('''INSERT INTO tcc_suspeitos
         (titulo, autor, orientador_id, orientador_nome, curso_id, curso_nome,
          ano_submissao, data_submissao, caminho_ficheiro, submetido_por)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id''',
         (titulo, autor, orientador_id, orientador_nome, curso_id, curso_nome,
          ano_submissao, datetime.now().strftime('%Y-%m-%d %H:%M'), caminho_ficheiro, submetido_por))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def listar_tcc_suspeitos(curso_id=None, estado=None, pesquisa=None, pagina=1, por_pagina=20):
@@ -266,7 +279,7 @@ def listar_tcc_suspeitos(curso_id=None, estado=None, pesquisa=None, pagina=1, po
     if estado:
         where.append('estado = %s'); params.append(estado)
     if pesquisa:
-        where.append("(titulo LIKE %s OR autor LIKE %s)"); params.extend([f'%{pesquisa}%'] * 2)
+        where.append("(titulo ILIKE %s OR autor ILIKE %s)"); params.extend([f'%{pesquisa}%'] * 2)
     clause = ('WHERE ' + ' AND '.join(where)) if where else ''
     cur.execute(f'SELECT COUNT(*) as cnt FROM tcc_suspeitos {clause}', params)
     total = cur.fetchone()[0]
@@ -363,12 +376,13 @@ def inserir_verificacao(tcc_suspeito_id, curso_id_filtro=None, curso_nome_filtro
         (tcc_suspeito_id, curso_id_filtro, curso_nome_filtro, limiar_usado,
          percentagem_plagio, nivel, num_chunks_total, num_chunks_suspeitos,
          data, duracao_segundos, caminho_relatorio, score_abnt, score_apa, observacoes)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id''',
         (tcc_suspeito_id, curso_id_filtro, curso_nome_filtro, limiar_usado,
          pct, nivel, num_total, num_suspeitos,
          datetime.now().strftime('%Y-%m-%d %H:%M'), duracao, caminho_rel, score_abnt, score_apa, observacoes))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def listar_verificacoes(limite=10):
@@ -451,7 +465,7 @@ def contar_por_nivel():
 def verificacoes_por_mes():
     db = get_db()
     cur = db.cursor()
-    cur.execute('''SELECT DATE_FORMAT(data, '%%Y-%%m') as mes, COUNT(*) as total
+    cur.execute('''SELECT TO_CHAR(data, 'YYYY-MM') as mes, COUNT(*) as total
         FROM verificacoes GROUP BY mes ORDER BY mes DESC LIMIT 6''')
     rows = cur.fetchall()
     return {r[0]: r[1] for r in reversed(rows)}
@@ -461,7 +475,7 @@ def verificacoes_por_mes_aprov_reprov():
     db = get_db()
     cur = db.cursor()
     cur.execute('''
-        SELECT DATE_FORMAT(data, '%%Y-%%m') as mes,
+        SELECT TO_CHAR(data, 'YYYY-MM') as mes,
                 SUM(CASE WHEN nivel = 'Baixo' THEN 1 ELSE 0 END) as aprovados,
                 SUM(CASE WHEN nivel IN ('Moderado','Alto','Critico') THEN 1 ELSE 0 END) as reprovados
         FROM verificacoes GROUP BY mes ORDER BY mes
@@ -501,13 +515,14 @@ def inserir_match(verificacao_id, tcc_valido_id=None, tcc_valido_titulo='',
          num_chunks_comuns, similaridade_max, similaridade_media, contribuicao_pct,
          fonte_tipo, fonte_externa_id, fonte_origem, titulo_fonte, url_fonte,
          trecho_similar, trecho_original)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id''',
         (verificacao_id, tcc_valido_id, tcc_valido_titulo, tcc_valido_autor,
          num_chunks_comuns, similaridade_max, similaridade_media, contribuicao_pct,
          fonte_tipo, fonte_externa_id, fonte_origem, titulo_fonte, url_fonte,
          trecho_similar, trecho_original))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def listar_matches(verificacao_id):
@@ -529,10 +544,11 @@ def inserir_chunk_suspeito(verificacao_id, match_id=None, posicao=0,
     cur = db.cursor()
     cur.execute('''INSERT INTO chunks_suspeitos
         (verificacao_id, match_id, posicao_chunk, texto_suspeito, texto_origem,
-         similaridade, secao_estimada) VALUES (%s,%s,%s,%s,%s,%s,%s)''',
+         similaridade, secao_estimada) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id''',
         (verificacao_id, match_id, posicao, texto_suspeito, texto_origem, similaridade, secao))
+    result = cur.fetchone()
     db.commit()
-    return cur.lastrowid
+    return result[0] if result else None
 
 
 def listar_chunks_suspeitos(verificacao_id):
@@ -583,7 +599,7 @@ def suspeitos_por_estado():
 def evolucao_media_plagio():
     db = get_db()
     cur = db.cursor()
-    cur.execute('''SELECT DATE_FORMAT(data, '%%Y-%%m') as mes,
+    cur.execute('''SELECT TO_CHAR(data, 'YYYY-MM') as mes,
         AVG(percentagem_plagio) as media FROM verificacoes
         GROUP BY mes ORDER BY mes DESC LIMIT 6''')
     rows = cur.fetchall()
@@ -617,15 +633,15 @@ def guardar_veredicto_final(verificacao_id, dados):
              tipo_predominante, gravidade, conclusao_ia,
              modelo_ia_usado, chunks_analisados, gerado_por_ia, data_geracao)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-        ON DUPLICATE KEY UPDATE
-            score_global = VALUES(score_global),
-            classificacao = VALUES(classificacao),
-            tipo_predominante = VALUES(tipo_predominante),
-            gravidade = VALUES(gravidade),
-            conclusao_ia = VALUES(conclusao_ia),
-            modelo_ia_usado = VALUES(modelo_ia_usado),
-            chunks_analisados = VALUES(chunks_analisados),
-            gerado_por_ia = VALUES(gerado_por_ia),
+        ON CONFLICT (verificacao_id) DO UPDATE SET
+            score_global = EXCLUDED.score_global,
+            classificacao = EXCLUDED.classificacao,
+            tipo_predominante = EXCLUDED.tipo_predominante,
+            gravidade = EXCLUDED.gravidade,
+            conclusao_ia = EXCLUDED.conclusao_ia,
+            modelo_ia_usado = EXCLUDED.modelo_ia_usado,
+            chunks_analisados = EXCLUDED.chunks_analisados,
+            gerado_por_ia = EXCLUDED.gerado_por_ia,
             data_geracao = NOW()
     """, (
         verificacao_id,
@@ -639,7 +655,7 @@ def guardar_veredicto_final(verificacao_id, dados):
         dados.get('gerado_por_ia', 0),
     ))
     db.commit()
-    return cur.lastrowid
+    return verificacao_id
 
 
 def obter_veredicto_final(verificacao_id):
@@ -719,7 +735,11 @@ def guardar_embedding_chunk(tcc_id, tipo, chunk_texto, vector):
     try:
         db = get_db()
     except RuntimeError:
-        db = mysql.connector.connect(**MYSQL_CONFIG)
+        config = get_db_config()
+        if isinstance(config, str):
+            db = psycopg2.connect(config)
+        else:
+            db = psycopg2.connect(**config)
     cur = db.cursor()
     vector_json = json.dumps(vector)
     cur.execute(
@@ -733,7 +753,11 @@ def listar_embeddings_por_tipo(tipo):
     try:
         db = get_db()
     except RuntimeError:
-        db = mysql.connector.connect(**MYSQL_CONFIG)
+        config = get_db_config()
+        if isinstance(config, str):
+            db = psycopg2.connect(config)
+        else:
+            db = psycopg2.connect(**config)
     cur = db.cursor()
     cur.execute('SELECT tcc_id, chunk_texto, vector FROM embeddings_chunks WHERE tipo = %s', (tipo,))
     results = []

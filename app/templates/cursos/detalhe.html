@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ curso.nome }} — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('cursos.lista') }}" style="font-size:0.8rem; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px; text-decoration:none; margin-bottom: 0.5rem;">
+            <i class='ti ti-arrow-left'></i> Voltar para Cursos
+        </a>
+        <h1 class="page-title"><i class='ti ti-school text-accent' style="margin-right:8px; color:var(--accent)"></i> {{ curso.nome }}</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">
+            {% if curso.departamento %}{{ curso.departamento }}{% endif %} 
+            {% if curso.codigo %}({{ curso.codigo }}){% endif %}
+        </p>
+    </div>
+    <a href="{{ url_for('cursos.editar', id=curso.id) }}" class="btn btn-ghost"><i class='ti ti-edit'></i> Editar Curso</a>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">TCC Válidos</span>
+            <i class="ti ti-book-bookmark kpi-icon-outline" style="color:var(--success)"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ estatisticas.num_validos }}</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">TCC Pendentes</span>
+            <i class="ti ti-alert-circle kpi-icon-outline" style="color:var(--danger)"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ estatisticas.num_suspeitos }}</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Média Plágio</span>
+            <i class="ti ti-trending-up kpi-icon-outline" style="color:var(--warning)"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ estatisticas.media_plagio }}%</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Orientadores</span>
+            <i class="ti ti-users kpi-icon-outline" style="color:var(--accent)"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ estatisticas.num_orientadores }}</span>
+        </div>
+    </div>
+</div>
+
+{% if tcc_validos %}
+<div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-book-bookmark' style="margin-right:8px; color:var(--success)"></i> TCC Válidos ({{ tcc_validos|length }})</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Ano</th>
+                    <th>ABNT</th>
+                    <th class="text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tcc_validos[:20] %}
+                <tr>
+                    <td class="td-title"><a href="{{ url_for('tcc_validos.detalhe', id=t.id) }}" class="link-title">{{ t.titulo }}</a></td>
+                    <td>{{ t.autor }}</td>
+                    <td>{{ t.ano_defesa or '—' }}</td>
+                    <td>{{ t.score_abnt|round(0)|int }}%</td>
+                    <td class="action-group">
+                        <a href="{{ url_for('tcc_validos.detalhe', id=t.id) }}" class="btn btn-sm btn-ghost" title="Ver Detalhes"><i class='ti ti-eye'></i> Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if tcc_suspeitos %}
+<div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-alert-circle' style="margin-right:8px; color:var(--danger)"></i> TCC Pendentes ({{ tcc_suspeitos|length }})</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Estado</th>
+                    <th>Última Sem.</th>
+                    <th class="text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tcc_suspeitos[:20] %}
+                <tr>
+                    <td class="td-title"><a href="{{ url_for('tcc_suspeitos.detalhe', id=t.id) }}" class="link-title">{{ t.titulo or '—' }}</a></td>
+                    <td>{{ t.autor }}</td>
+                    <td><span class="badge badge-{{ t.estado }}">{{ t.estado|replace('_',' ')|title }}</span></td>
+                    <td>{% if t.ultima_pct_plagio is not none %}{{ t.ultima_pct_plagio }}%{% else %}—{% endif %}</td>
+                    <td class="action-group">
+                        <a href="{{ url_for('tcc_suspeitos.detalhe', id=t.id) }}" class="btn btn-sm btn-ghost" title="Ver Detalhes"><i class='ti ti-eye'></i> Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if orientadores %}
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-users' style="margin-right:8px; color:var(--accent)"></i> Orientadores ({{ orientadores|length }})</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Titulação</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orientadores %}
+                <tr>
+                    <td>{{ o.nome }}</td>
+                    <td>{{ o.titulacao or '—' }}</td>
+                    <td>{{ o.email or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

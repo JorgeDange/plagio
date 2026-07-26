@@ -1,0 +1,607 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — IMETRO TFC{% endblock %}
+{% block content %}
+
+{% if is_carregador %}
+<!-- ═══════════════════════════════════════════════ -->
+<!-- VISTA CARREGADOR — Apenas seus envios          -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Os Meus Envios</h1>
+        <p class="page-subtitle" style="color:var(--text-muted);font-size:0.85rem;">Trabalhos que submeteu para verificação</p>
+    </div>
+</div>
+
+<!-- KPIs do Carregador -->
+<div class="kpi-grid" style="margin-bottom:1.5rem;">
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Total Enviados</span>
+            <i class="ti ti-upload kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats.total_enviados }}</span>
+        </div>
+        <div class="kpi-row-bottom">Trabalhos submetidos</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Pendentes</span>
+            <i class="ti ti-clock kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value" style="color:var(--warning);">{{ stats.pendentes }}</span>
+        </div>
+        <div class="kpi-row-bottom">Aguardam verificação</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Em Verificação</span>
+            <i class="ti ti-search kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value" style="color:var(--info);">{{ stats.em_verificacao }}</span>
+        </div>
+        <div class="kpi-row-bottom">Em processamento</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Verificados</span>
+            <i class="ti ti-circle-check kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value" style="color:var(--success);">{{ stats.verificados }}</span>
+        </div>
+        <div class="kpi-row-bottom">Análises concluídas</div>
+    </div>
+</div>
+
+<!-- Tabela de Envios do Carregador -->
+<div class="card">
+    <div class="table-container-header">
+        <span class="table-container-title"><i class='ti ti-file-text'></i> Trabalhos Submetidos</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Curso</th>
+                    <th>Data de Submissão</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in meus_envios %}
+                <tr>
+                    <td><span style="font-weight:600;color:var(--accent);">#{{ t.id }}</span></td>
+                    <td class="td-title">{{ t.titulo or '—' }}</td>
+                    <td>{{ t.autor or '—' }}</td>
+                    <td>{{ t.curso_nome or '—' }}</td>
+                    <td>{{ t.data_submissao or '—' }}</td>
+                    <td>
+                        {% set estado = t.estado or 'pendente' %}
+                        {% if estado == 'aprovado' %}
+                        <span class="badge badge-aprovado">Aprovado</span>
+                        {% elif estado == 'verificado' %}
+                        <span class="badge badge-verificado">Verificado</span>
+                        {% elif estado == 'em_verificacao' %}
+                        <span class="badge badge-pendente">Em Verificação</span>
+                        {% elif estado == 'rejeitado' %}
+                        <span class="badge badge-rejeitado">Rejeitado</span>
+                        {% else %}
+                        <span class="badge badge-pendente">Pendente</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not meus_envios %}
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">
+                        <i class='ti ti-inbox' style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+                        Ainda não submeteu nenhum trabalho.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- ═══════════════════════════════════════════════ -->
+<!-- VISTA ADMIN/VERIFICADOR/APROVADOR — Completa    -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Painel Principal</h1>
+    </div>
+    <div class="header-actions">
+        <button class="date-selector-btn">
+            <i class="ti ti-calendar"></i>
+            <span>Jan 1, 2026 - Jun 30, 2026</span>
+        </button>
+        <button class="btn btn-ghost btn-sm">
+            <i class="ti ti-download"></i>
+            <span>Exportar Dados</span>
+        </button>
+    </div>
+</div>
+
+<!-- Alert Cards -->
+{% if not is_carregador and (stats.pendentes > 0 or stats.sem_abnt > 0 or stats.pendentes_normas > 0) %}
+<div class="alert-cards">
+    {% if stats.pendentes > 0 %}
+    <div class="alert-card alert-card-warning">
+        <i class="ti ti-clock" style="font-size:18px;"></i>
+        &nbsp;{{ stats.pendentes }} trabalhos aguardam verificação na fila
+    </div>
+    {% endif %}
+    {% if stats.pendentes_normas > 0 %}
+    <div class="alert-card"
+        style="background: var(--danger-bg); border-color: var(--danger); color: var(--danger);">
+        <i class='ti ti-alert-circle' style="font-size:18px;"></i>
+        &nbsp;{{ stats.pendentes_normas }} trabalhos reprovaram nas Normas IMETRO e aguardam revisão
+    </div>
+    {% endif %}
+    {% if stats.sem_abnt > 0 %}
+    <div class="alert-card alert-card-info">
+        <i class='ti ti-ruler-2' style="font-size:18px;"></i>
+        &nbsp;{{ stats.sem_abnt }} trabalhos sem conformidade ABNT/APA completa
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- KPI Cards Grid -->
+<div class="kpi-grid">
+    <!-- Card 1 -->
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Trabalhos Aprovados</span>
+            <i class="ti ti-book-bookmark kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats.tcc_validos }}</span>
+            <span class="kpi-badge kpi-badge--up">
+                <i class="ti ti-arrow-up-right"></i> +12%
+            </span>
+        </div>
+        <div class="kpi-row-bottom">
+            Total indexado: <span class="kpi-footer-val">{{ stats.tcc_validos }}</span>
+        </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Trabalhos a Verificar</span>
+            <i class="ti ti-alert-circle kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats.tcc_suspeitos }}</span>
+            <span class="kpi-badge kpi-badge--down">
+                <i class="ti ti-arrow-down-right"></i> -8%
+            </span>
+        </div>
+        <div class="kpi-row-bottom">
+            Trabalhos na fila: <span class="kpi-footer-val">{{ stats.tcc_suspeitos }}</span>
+        </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Verificações Realizadas</span>
+            <i class="ti ti-search kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats.total_verificacoes }}</span>
+            <span class="kpi-badge kpi-badge--up">
+                <i class="ti ti-arrow-up-right"></i> +15%
+            </span>
+        </div>
+        <div class="kpi-row-bottom">
+            Análises efetuadas: <span class="kpi-footer-val">{{ stats.total_verificacoes }}</span>
+        </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Semelhança Alta</span>
+            <i class="ti ti-trending-up kpi-icon-outline"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats.plagio_alto }}</span>
+            <span class="kpi-badge kpi-badge--up">
+                <i class="ti ti-arrow-up-right"></i> +5%
+            </span>
+        </div>
+        <div class="kpi-row-bottom">
+            Críticos/Altos detectados: <span class="kpi-footer-val">{{ stats.plagio_alto }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="charts-grid-layout new-charts-layout">
+    <!-- Chart Column Left (40%) -->
+    <div class="chart-card-wrapper" style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 1.5rem; border: 1px solid var(--border-light);">
+        <div class="chart-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <span class="chart-card-title" style="font-weight: 700; font-size: 1.1rem; color: #1e293b;">Desempenho das Análises</span>
+            <select class="form-control" style="width: auto; padding: 0.3rem 1.5rem 0.3rem 0.75rem; font-size: 0.85rem; border-radius: 6px; border-color: #e2e8f0; color: #64748b;">
+                <option>Mensal</option>
+            </select>
+        </div>
+        <div class="chart-card-body" style="height: 280px; position: relative;">
+            <canvas id="chartBarPerformance"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart Column Right (60%) -->
+    <div class="chart-card-wrapper" style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 1.5rem; border: 1px solid var(--border-light);">
+        <div class="chart-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <span class="chart-card-title" style="font-weight: 700; font-size: 1.1rem; color: #1e293b;">Tendência de Submissões</span>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Custom Legend -->
+                <div style="display: flex; gap: 1rem; font-size: 0.85rem; font-weight: 500; color: #64748b;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <span style="width: 12px; height: 12px; border-radius: 3px; background: #10b981;"></span> Trabalhos Aprovados
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <span style="width: 12px; height: 12px; border-radius: 3px; background: #3b82f6;"></span> Trabalhos Reprovados
+                    </div>
+                </div>
+                <select class="form-control" style="width: auto; padding: 0.3rem 1.5rem 0.3rem 0.75rem; font-size: 0.85rem; border-radius: 6px; border-color: #e2e8f0; color: #64748b;">
+                    <option>Mensal</option>
+                </select>
+            </div>
+        </div>
+        <div class="chart-card-body" style="height: 280px; position: relative;">
+            <canvas id="chartLineTrend"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+    .new-charts-layout {
+        display: grid;
+        grid-template-columns: 4fr 6fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (max-width: 1024px) {
+        .new-charts-layout { grid-template-columns: 1fr; }
+    }
+</style>
+
+<!-- Recent Verifications Table -->
+<div class="card" style="margin-top:1.25rem;">
+    <div class="table-container-header">
+        <span class="table-container-title">Últimos Resultados</span>
+        <div class="table-container-actions">
+            <div class="table-search-input">
+                <i class="ti ti-search"></i>
+                <input type="text" placeholder="Pesquisar...">
+            </div>
+            <select class="table-select-filter">
+                <option>Todos os Cursos</option>
+            </select>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table" id="tabelaVerificacoes">
+            <thead>
+                <tr>
+                    <th style="width: 40px; padding-left: 1.25rem;"><input type="checkbox" id="checkAll"></th>
+                    <th>ID Verificação</th>
+                    <th>Data</th>
+                    <th>Autor (Cliente)</th>
+                    <th>Curso (Categoria)</th>
+                    <th>Estado</th>
+                    <th>ABNT / APA</th>
+                    <th>% Semelhança (Total)</th>
+                    <th class="text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in verificacoes[:5] %}
+                <tr>
+                    <td style="padding-left: 1.25rem;"><input type="checkbox" class="row-checkbox" value="{{ v.id }}"></td>
+                    <td><span style="font-weight:600; color:var(--accent);">#{{ v.id }}</span></td>
+                    <td class="td-date">{{ v.data }}</td>
+                    <td class="td-title">{{ v.tcc_autor or '—' }}</td>
+                    <td>{{ v.curso_nome_filtro or '—' }}</td>
+                    <td>
+                        {% if v.suspeito_estado == 'aprovado' %}
+                        <span class="badge badge-verificado">Concluído</span>
+                        {% else %}
+                        <span class="badge badge-pendente">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-size: 11px; color: var(--text-muted);">ABNT:</span> {{ v.score_abnt|round(0)|int }}%<br>
+                        <span style="font-size: 11px; color: var(--text-muted);">APA:</span> {{ (v.score_apa or 0)|round(0)|int }}%
+                    </td>
+                    <td>
+                        <div class="pct-bar-container">
+                            <div class="pct-bar-track">
+                                <div class="pct-bar-fill pct-bar-fill-{{ v.nivel|lower }}"
+                                    style="width: {{ v.percentagem_plagio }}%;"></div>
+                            </div>
+                            <span class="pct-bar-label" style="font-weight: 600; color: var(--text);">{{ v.percentagem_plagio }}%</span>
+                        </div>
+                    </td>
+                    <td class="action-group">
+                        {% if current_user.is_verificador or current_user.is_admin %}
+                        <a href="{{ url_for('verificacoes.resultado', id=v.id) }}"
+                            class="btn btn-sm btn-ghost" title="Ver Detalhes">
+                            <i class='ti ti-eye'></i> Ver
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not verificacoes %}
+                <tr>
+                    <td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted);">Nenhum resultado disponível.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}{# fecha is_carregador #}
+
+{% endblock %}
+
+{% block scripts %}
+{% if not is_carregador %}
+<script id="stats-data" type="application/json">
+{{ stats|tojson|safe }}
+</script>
+<script>
+    const S = JSON.parse(document.getElementById('stats-data').textContent);
+    
+    // Shared chart options matching Inter font & clean aesthetic
+    const chartOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                    boxWidth: 12,
+                    font: { family: 'Inter', size: 11, weight: 500 },
+                    color: '#64748B'
+                }
+            },
+            tooltip: {
+                backgroundColor: '#0F2A52',
+                titleFont: { family: 'Inter', size: 12, weight: 600 },
+                bodyFont: { family: 'Inter', size: 12 },
+                padding: 10,
+                cornerRadius: 6
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' }
+            },
+            y: {
+                grid: { color: '#EEF2F7' },
+                ticks: { font: { family: 'Inter', size: 11 }, color: '#64748B' }
+            }
+        }
+    };
+
+    // 1. Bar Chart: Content Performance (Desempenho)
+    const ctxBar = document.getElementById('chartBarPerformance').getContext('2d');
+    
+    // Configurações do gráfico de barras para criar o efeito "barras com fundo"
+    // Usaremos as chaves dinâmicas do servidor, mas para o estilo visual, precisamos de cores variadas
+    const barLabels = Object.keys(S.verificacoes_por_mes);
+    const barData = Object.values(S.verificacoes_por_mes);
+    
+    // Calcular um valor "máximo" simulado para o background bar (ex: 20% acima do máximo real)
+    const maxVal = Math.max(...barData);
+    const bgVal = Math.ceil((maxVal * 1.2) / 10) * 10; // Arredonda para a dezena superior
+    const bgData = Array(barLabels.length).fill(bgVal);
+
+    // Cores vibrantes conforme o design fornecido
+    const barColors = ['#14b8a6', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
+
+    new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+            labels: barLabels.map(l => l.substring(0, 3)), // Abrevia para 3 letras ex: "Jan"
+            datasets: [
+                {
+                    label: 'Análises',
+                    data: barData,
+                    backgroundColor: barLabels.map((_, i) => barColors[i % barColors.length]),
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.45,
+                    categoryPercentage: 0.8,
+                    order: 1 // Desenha por cima do background
+                },
+                {
+                    label: 'Max Capacity',
+                    data: bgData,
+                    backgroundColor: '#f1f5f9', // Cor de fundo clara
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.45,
+                    categoryPercentage: 0.8,
+                    grouped: false, // Fundamental: faz as barras sobreporem-se
+                    order: 2, // Desenha por trás
+                    tooltip: { displayColors: false, callbacks: { label: () => null } } // Oculta do tooltip
+                }
+            ]
+        },
+        options: {
+            ...chartOpts,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                ...chartOpts.plugins,
+                legend: { display: false },
+                tooltip: {
+                    ...chartOpts.plugins.tooltip,
+                    filter: function(tooltipItem) {
+                        return tooltipItem.datasetIndex === 0; // Mostrar tooltip apenas do dataset real
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
+                },
+                y: {
+                    grid: { color: '#f1f5f9', borderDash: [4, 4], drawBorder: false },
+                    ticks: { 
+                        font: { family: 'Inter', size: 11 }, 
+                        color: '#94a3b8',
+                        stepSize: Math.ceil(bgVal / 5)
+                    },
+                    max: bgVal
+                }
+            }
+        }
+    });
+
+    // 2. Line Chart: Content Performance (Linhas com Preenchimento e Suavização)
+    const ctxLine = document.getElementById('chartLineTrend').getContext('2d');
+    
+    // Criar gradientes de preenchimento para as áreas
+    const gradientGreen = ctxLine.createLinearGradient(0, 0, 0, 300);
+    gradientGreen.addColorStop(0, 'rgba(16, 185, 129, 0.15)');
+    gradientGreen.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+    const gradientBlue = ctxLine.createLinearGradient(0, 0, 0, 300);
+    gradientBlue.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
+    gradientBlue.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+    // Dados reais de aprovados/reprovados por mês
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const mesesChave = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+    const anoRef = new Date().getFullYear();
+
+    const lineDataAprovados = mesesChave.map(function(m, i) {
+      var item = S.verificacoes_mensais.find(function(r) { return r.mes === anoRef + '-' + m; });
+      return item ? item.aprovados : 0;
+    });
+    const lineDataReprovados = mesesChave.map(function(m, i) {
+      var item = S.verificacoes_mensais.find(function(r) { return r.mes === anoRef + '-' + m; });
+      return item ? item.reprovados : 0;
+    });
+
+    new Chart(ctxLine, {
+        type: 'line',
+        data: {
+            labels: meses,
+            datasets: [
+                {
+                    label: 'Trabalhos Aprovados',
+                    data: lineDataAprovados,
+                    borderColor: '#10b981', // Verde Esmeralda
+                    backgroundColor: gradientGreen,
+                    borderWidth: 2.5,
+                    tension: 0.4, // Curvas suaves (Spline)
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#10b981',
+                    pointHoverBorderWidth: 2
+                },
+                {
+                    label: 'Trabalhos Reprovados',
+                    data: lineDataReprovados,
+                    borderColor: '#3b82f6', // Azul
+                    backgroundColor: gradientBlue,
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#3b82f6',
+                    pointHoverBorderWidth: 2
+                }
+            ]
+        },
+        options: {
+            ...chartOpts,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                ...chartOpts.plugins,
+                legend: { display: false }, // Legenda customizada já está no HTML
+                tooltip: {
+                    backgroundColor: '#ffffff',
+                    titleColor: '#64748b',
+                    bodyColor: '#1e293b',
+                    borderColor: '#e2e8f0',
+                    borderWidth: 1,
+                    titleFont: { family: 'Inter', size: 12, weight: 500 },
+                    bodyFont: { family: 'Inter', size: 13, weight: 700 },
+                    padding: 12,
+                    boxPadding: 6,
+                    usePointStyle: true,
+                    callbacks: {
+                    label: function(context) {
+                        return ` ${context.dataset.label}: ${context.parsed.y}`;
+                    }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
+                },
+                y: {
+                    grid: { color: '#f1f5f9', borderDash: [4, 4], drawBorder: false },
+                    ticks: { 
+                        font: { family: 'Inter', size: 11 }, 
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return value;
+                        }
+                    },
+                    min: 0
+
+                }
+            }
+        }
+    });
+
+    // Checkbox master toggle logic
+    const checkAll = document.getElementById('checkAll');
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.checked = checkAll.checked;
+            });
+        });
+    }
+</script>
+{% endif %}{# fecha not is_carregador #}
+{% endblock %}

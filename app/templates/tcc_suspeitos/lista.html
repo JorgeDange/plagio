@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Trabalhos a Verificar — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-alert-triangle' style="color: var(--danger); margin-right: 0.5rem;"></i> Trabalhos a Verificar</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">{{ total }} trabalho(s) para verificação</p>
+    </div>
+    <a href="{{ url_for('tcc_suspeitos.submeter') }}" class="btn btn-primary"><i class='ti ti-upload' style="margin-right:6px;"></i> Enviar Trabalho</a>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="table-container-header" style="padding: 1.25rem; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <form method="GET" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;flex:1;">
+            <select name="curso_id" class="form-select" onchange="this.form.submit()" style="min-width: 180px;">
+                <option value="">Todos os Cursos</option>
+                {% for c in cursos %}
+                <option value="{{ c.id }}" {% if filtro_curso == c.id %}selected{% endif %}>{{ c.nome }}</option>
+                {% endfor %}
+            </select>
+            <select name="estado" class="form-select" onchange="this.form.submit()" style="min-width: 180px;">
+                <option value="">Todos os Estados</option>
+                {% set nomes_estados = {'pendente':'Aguarda verificação', 'em_verificacao':'Em análise', 'verificado':'Verificado', 'aprovado':'Aprovado', 'reprovado':'Reprovado'} %}
+                {% for e in ['pendente','em_verificacao','verificado','aprovado','reprovado'] %}
+                <option value="{{ e }}" {% if filtro_estado == e %}selected{% endif %}>{{ nomes_estados[e] }}</option>
+                {% endfor %}
+            </select>
+            <div style="position:relative; flex: 1; max-width: 300px; min-width: 200px;">
+                <i class="ti ti-search" style="position:absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                <input type="text" name="q" class="form-input" placeholder="Pesquisar trabalho..." value="{{ filtro_q }}" style="padding-left: 36px; width: 100%;">
+            </div>
+            <button type="submit" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Filtrar</button>
+        </form>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Curso</th>
+                    <th>Data</th>
+                    <th>Estado</th>
+                    <th>Última Semelhança</th>
+                    <th class="text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tccs %}
+                <tr>
+                    <td class="td-title" style="font-weight: 500;">
+                        <a href="{{ url_for('tcc_suspeitos.detalhe', id=t.id) }}" class="link-title" style="color: var(--accent); text-decoration: none;">
+                            {{ t.titulo or '(Sem título)' }}
+                        </a>
+                    </td>
+                    <td>{{ t.autor }}</td>
+                    <td>{{ t.curso_nome or '—' }}</td>
+                    <td class="td-date">{{ t.data_submissao }}</td>
+                    <td>
+                        {% set badge_class = {
+                            'pendente': 'badge-neutral',
+                            'em_verificacao': 'badge-suspeito',
+                            'verificado': 'badge-aprovado',
+                            'aprovado': 'badge-aprovado',
+                            'reprovado': 'badge-reprovado'
+                        }[t.estado] | default('badge-neutral') %}
+                        <span class="badge {{ badge_class }}">
+                            {% set nomes_estados = {'pendente':'Aguarda verificação', 'em_verificacao':'Em análise', 'verificado':'Verificado', 'aprovado':'Aprovado', 'reprovado':'Reprovado'} %}
+                            {{ nomes_estados[t.estado] or t.estado|replace('_',' ')|title }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if t.ultima_pct_plagio is not none %}
+                            <div style="display:flex; align-items:center; gap: 0.5rem;">
+                                <strong>{{ t.ultima_pct_plagio }}%</strong>
+                                {% set pct_badge_class = {
+                                    'alto': 'badge-reprovado',
+                                    'medio': 'badge-suspeito',
+                                    'baixo': 'badge-aprovado'
+                                }[t.ultimo_nivel|lower] | default('badge-neutral') %}
+                                <span class="badge {{ pct_badge_class }}">{{ t.ultimo_nivel or '—' }}</span>
+                            </div>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <div style="display:inline-flex; gap:0.25rem; justify-content:flex-end;">
+                            {% if current_user.is_verificador or current_user.is_admin %}
+                            <a href="{{ url_for('tcc_suspeitos.detalhe', id=t.id) }}" class="btn btn-sm btn-ghost" title="Ver Detalhes">
+                                <i class='ti ti-eye' style="margin-right: 4px;"></i> Ver
+                            </a>
+                            {% endif %}
+                            {% if current_user.is_admin %}
+                            <form method="POST" action="{{ url_for('tcc_suspeitos.remover', id=t.id) }}">
+                                <button type="submit" class="btn btn-sm btn-ghost" style="color:var(--danger)" title="Remover" data-modal-confirm data-modal-message="Remover este trabalho suspeito?" data-modal-title="Confirmar Remoção" data-modal-type="btn-danger">
+                                    <i class='ti ti-trash'></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not tccs %}
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-muted)">Nenhum trabalho a verificar.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if total_paginas > 1 %}
+<div class="pagination" style="margin-top: 1.5rem; justify-content: center; display: flex; gap: 0.25rem;">
+    {% for p in range(1,total_paginas+1) %}
+    <a href="?pagina={{ p }}&curso_id={{ filtro_curso or '' }}&estado={{ filtro_estado }}&q={{ filtro_q }}" class="{% if p == pagina %}active{% endif %}" style="text-decoration:none; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm);">{{ p }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

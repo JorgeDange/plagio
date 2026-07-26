@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Veredicto · {{ dados.verificacao.titulo | truncate(40) }}{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="vf-wrapper">
+
+  {# ── Zona de Acções (fora do A4) ── #}
+  <div class="vf-acoes-bar" id="zona-acoes">
+    <a href="{{ url_for('verificacoes.resultado', id=dados.verificacao.id) }}" class="vf-btn vf-btn-outline">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Voltar
+    </a>
+    <button id="btn-download" onclick="baixarPDF()" class="vf-btn vf-btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      Baixar Documento
+    </button>
+    {% if current_user.papel == 'administrador' %}
+    <form method="POST"
+          action="{{ url_for('verificacoes.regenerar_veredicto', verificacao_id=dados.verificacao.id) }}"
+          style="display:inline">
+      <button type="submit" class="vf-btn vf-btn-outline"
+               data-modal-confirm data-modal-message="Regenerar o veredicto com IA? O texto actual será substituído." data-modal-title="Regenerar Veredicto" data-modal-type="btn-warning">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Regenerar
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {# ── Folha A4 ── #}
+  <div class="vf-folha" id="folha-a4">
+
+    {# ═══ CABEÇALHO INSTITUCIONAL ═══ #}
+    <header class="vf-header">
+      <div class="vf-header-logo-wrap">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="IMETRO"
+             style="max-height:80px;width:auto;display:block">
+      </div>
+      <h1 class="vf-header-inst">INSTITUTO SUPERIOR POLITÉCNICO METROPOLITANO DE ANGOLA</h1>
+      <p class="vf-header-sub">RELATÓRIO DE VERIFICAÇÃO DE ORIGINALIDADE</p>
+      <div class="vf-header-meta">
+        <span>Ref. {{ dados.referencia }}</span>
+        <span class="vf-header-data">{{ dados.verificacao.data | default('—') }}</span>
+      </div>
+    </header>
+
+    {# ═══ SECÇÃO 1 — Identificação do Trabalho ═══ #}
+    <section class="vf-seccao">
+      <h2 class="vf-seccao-titulo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        DADOS DO TRABALHO
+      </h2>
+      <div class="vf-grid-2col">
+        <div class="vf-campo"><span class="vf-campo-label">Título</span><span class="vf-campo-valor">{{ dados.verificacao.titulo }}</span></div>
+        <div class="vf-campo"><span class="vf-campo-label">Autor</span><span class="vf-campo-valor">{{ dados.verificacao.autor }}</span></div>
+        <div class="vf-campo"><span class="vf-campo-label">Curso</span><span class="vf-campo-valor">{{ dados.verificacao.curso_nome or '—' }}</span></div>
+        <div class="vf-campo"><span class="vf-campo-label">Orientador</span><span class="vf-campo-valor">{{ dados.verificacao.orientador_nome or '—' }}</span></div>
+        <div class="vf-campo"><span class="vf-campo-label">Ano Lectivo</span><span class="vf-campo-valor">{{ dados.verificacao.ano or '—' }}</span></div>
+        <div class="vf-campo"><span class="vf-campo-label">Data de Submissão</span><span class="vf-campo-valor">{{ dados.verificacao.data | default('—') }}</span></div>
+      </div>
+    </section>
+
+    {# ═══ SECÇÃO 2 — Resultado da Análise ═══ #}
+    <section class="vf-seccao">
+      <h2 class="vf-seccao-titulo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        RESULTADO DA ANÁLISE
+      </h2>
+      {% if dados.veredicto %}
+      {% set score_pct = (dados.veredicto.score_global * 100) | round | int %}
+      <div class="vf-resultado-grid">
+        <div class="vf-score-box">
+          <span class="vf-score-numero">{{ score_pct }}<small>%</small></span>
+          <span class="vf-score-label">Score Global</span>
+        </div>
+        <div class="vf-info-box">
+          {% set cls = dados.veredicto.classificacao | lower | replace(' ', '-') | replace('í', 'i') | replace('ó', 'o') %}
+          <span class="vf-badge vf-badge-{{ cls }}">{{ dados.veredicto.classificacao }}</span>
+          {% if dados.veredicto.gravidade %}
+          <span class="vf-gravidade">{{ dados.veredicto.gravidade }}</span>
+          {% endif %}
+          {% if dados.veredicto.tipo_predominante %}
+          <span class="vf-tipo">{{ dados.veredicto.tipo_predominante }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="vf-barra-wrap">
+        <div class="vf-barra" style="width: {{ score_pct }}%" data-score="{{ score_pct }}"></div>
+      </div>
+      {% else %}
+      <p class="vf-sem-dados">A aguardar processamento do veredicto…</p>
+      {% endif %}
+    </section>
+
+    {# ═══ SECÇÃO 3 — Conclusão do Sistema (IA) ═══ #}
+    {% if dados.veredicto and dados.veredicto.conclusao_ia %}
+    <section class="vf-seccao vf-seccao-ia">
+      <h2 class="vf-seccao-titulo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        ANÁLISE AUTOMÁTICA
+      </h2>
+      <div class="vf-conclusao-bloco">
+        <blockquote>{{ dados.veredicto.conclusao_ia }}</blockquote>
+        <div class="vf-conclusao-rodape">
+          <span>Gerado por unimetro_ai</span>
+          <span>· {{ dados.veredicto.data_geracao | default('—') }}</span>
+          <span>· {{ dados.veredicto.chunks_analisados }} trechos</span>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {# ═══ SECÇÃO 4 — Parecer Final do Analista ═══ #}
+    <section class="vf-seccao vf-seccao-parecer">
+      <h2 class="vf-seccao-titulo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        PARECER INSTITUCIONAL
+      </h2>
+      <textarea class="vf-textarea" name="parecer" placeholder="Registe aqui o seu parecer institucional sobre o resultado da verificação…">{{ dados.veredicto.parecer_analista | default('') }}</textarea>
+      <div class="vf-assinatura">
+        <div class="vf-ass-item"><span class="vf-ass-label">Nome</span><span class="vf-ass-linha"></span></div>
+        <div class="vf-ass-item"><span class="vf-ass-label">Cargo</span><span class="vf-ass-linha"></span></div>
+        <div class="vf-ass-item"><span class="vf-ass-label">Data / Rubrica</span><span class="vf-ass-linha"></span></div>
+      </div>
+    </section>
+
+  </div>{# /vf-folha #}
+
+</div>{# /vf-wrapper #}
+
+<script>
+function baixarPDF() {
+  var btn = document.getElementById('btn-download');
+  var elemento = document.getElementById('folha-a4');
+  var acoes = document.getElementById('zona-acoes');
+  var textoOriginal = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'A gerar PDF...';
+
+  var opcoes = {
+    margin:       [10, 10, 10, 10],
+    filename:     'Relatorio_VRF-{{ dados.verificacao.id }}_{{ dados.verificacao.autor }}.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  acoes.style.display = 'none';
+  html2pdf().set(opcoes).from(elemento).save().then(function () {
+    acoes.style.display = 'flex';
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+  });
+}
+</script>
+{% endblock %}

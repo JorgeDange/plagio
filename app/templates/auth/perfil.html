@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import campo, flash_messages, botao %}
+
+{% block title %}Meu Perfil — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti ti-user' style="color:var(--accent);"></i> Meu Perfil</h2>
+        <p>Dados da sua conta e alteração de palavra-passe</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" action="{{ url_for('auth.perfil') }}" class="form-async">
+        <div class="form-section-title"><i class='ti ti-id-badge'></i> Dados Pessoais</div>
+        
+        <div class="form-row">
+            {{ campo('nome_readonly', 'Nome completo', valor=current_user.nome, desativado=True) }}
+            {{ campo('email_readonly', 'Email institucional', valor=current_user.email, desativado=True) }}
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title"><i class='ti ti-lock'></i> Alterar Palavra-passe</div>
+
+        {{ campo('password_actual', 'Palavra-passe actual', tipo='password', obrigatorio=True) }}
+        
+        <div class="form-row">
+            {{ campo('password_nova', 'Nova palavra-passe', tipo='password', obrigatorio=True, ajuda='Mínimo 8 caracteres') }}
+            {{ campo('password_confirmar', 'Confirmar nova palavra-passe', tipo='password', obrigatorio=True) }}
+        </div>
+
+        <div class="form-footer">
+            {{ botao('Alterar Palavra-passe', icon='ti-device-floppy', estilo='primary') }}
+            {{ botao('Cancelar', tipo='button', estilo='ghost', href=url_for('main.dashboard')) }}
+        </div>
+    </form>
+</div>
+{% endblock %}

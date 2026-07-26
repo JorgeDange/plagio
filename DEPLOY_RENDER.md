@@ -1,4 +1,4 @@
-# 🚀 Deploy no Render.com (Plano Gratuito)
+# 🚀 Deploy no Render.com (Plano Gratuito - PostgreSQL)
 
 Guia passo a passo para hospedar o IMETRO TFC v3 no Render.com.
 
@@ -15,7 +15,7 @@ Guia passo a passo para hospedar o IMETRO TFC v3 no Render.com.
 ## Passo 1: Preparar o Repositório GitHub
 
 1. Criar um repositório no GitHub
-2. Copiar todos os ficheiros do projeto para o repositório
+2. Copiar todos os ficheiros da pasta `deploy_render/` para o repositório
 3. Fazer push para o GitHub
 
 **Ficheiros importantes que devem estar no repositório:**
@@ -32,10 +32,10 @@ Guia passo a passo para hospedar o IMETRO TFC v3 no Render.com.
 
 ---
 
-## Passo 2: Criar a Base de Dados MySQL no Render
+## Passo 2: Criar a Base de Dados PostgreSQL no Render
 
 1. Login no [Render.com](https://render.com)
-2. Clicar em **"New +"** → **"MySQL"**
+2. Clicar em **"New +"** → **"PostgreSQL"**
 3. Configurar:
    - **Name**: `imetro-db`
    - **Database**: `plagio`
@@ -73,10 +73,12 @@ No painel do Web Service, ir à secção **"Environment"** e adicionar:
 | `FLASK_APP` | `run.py` | Ponto de entrada |
 | `FLASK_ENV` | `production` | Ambiente |
 | `FLASK_SECRET_KEY` | *(gerar aleatória)* | Chave secreta |
-| `MYSQL_HOST` | *(da BD)* | Host MySQL |
-| `MYSQL_USER` | *(da BD)* | Utilizador |
-| `MYSQL_PASSWORD` | *(da BD)* | Password |
-| `MYSQL_DB` | `plagio` | Nome da BD |
+| `DATABASE_URL` | *(copiar do Render)* | URL de conexão PostgreSQL |
+| `PGHOST` | *(da BD)* | Host PostgreSQL |
+| `PGUSER` | *(da BD)* | Utilizador |
+| `PGPASSWORD` | *(da BD)* | Password |
+| `PGDATABASE` | `plagio` | Nome da BD |
+| `PGPORT` | `5432` | Porta |
 
 ### Variáveis de API (Obrigatórias)
 
@@ -139,8 +141,8 @@ Após o primeiro deploy, aceder ao terminal do Render:
 - Verificar variáveis de ambiente
 
 ### Erro: "Database connection refused"
-- Confirmar que a BD MySQL está a correr
-- Verificar credenciais MYSQL_*
+- Confirmar que a BD PostgreSQL está a correr
+- Verificar credenciais PG* e DATABASE_URL
 - Verificar se o IP está na whitelist
 
 ### Erro: "Module not found"
@@ -157,7 +159,7 @@ Após o primeiro deploy, aceder ao terminal do Render:
 ## 📋 Checklist de Deploy
 
 - [ ] Repositório GitHub criado e com todos os ficheiros
-- [ ] Base de Dados MySQL criada no Render
+- [ ] Base de Dados PostgreSQL criada no Render
 - [ ] Web Service criado e conectado ao GitHub
 - [ ] Variáveis de ambiente configuradas
 - [ ] Build executado com sucesso
@@ -171,7 +173,7 @@ Após o primeiro deploy, aceder ao terminal do Render:
 - [Render.com](https://render.com)
 - [Documentação Render](https://render.com/docs)
 - [OpenRouter API](https://openrouter.ai)
-- [MySQL no Render](https://render.com/docs/databases)
+- [PostgreSQL no Render](https://render.com/docs/databases)
 
 ---
 

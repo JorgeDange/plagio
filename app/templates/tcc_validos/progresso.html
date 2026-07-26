@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Indexando... — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-refresh ti-spin' style="margin-right:8px; color:var(--accent)"></i> A Indexar TCC Válido</h1>
+    </div>
+</div>
+<div class="card" style="max-width:500px; margin: 2rem auto 0;">
+    <div class="card-body" style="text-align:center; padding: 2rem;">
+        <div class="spinner" style="width:40px;height:40px;border: 3px solid var(--border-light);border-top-color: var(--accent);border-radius: 50%;animation: spin 1s linear infinite;margin:0 auto 1.5rem;"></div>
+        <p id="progressTexto" style="font-weight:600; color: var(--text); font-size: 15px;">A processar...</p>
+        <div class="progress-bar-main" style="margin:1.5rem 0; background: var(--border-light); border-radius: var(--radius-sm); height: 8px; overflow: hidden;">
+            <div class="progress-bar-fill" id="progressBar" style="width:0%; background: var(--accent); height: 100%; transition: width 0.3s ease;"></div>
+        </div>
+        <div id="progressResultados"></div>
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+    const jobId='{{ job_id }}';
+    const bar=document.getElementById('progressBar');
+    const texto=document.getElementById('progressTexto');
+    const res=document.getElementById('progressResultados');
+    const timer=setInterval(()=>{
+        fetch('/api/progresso/'+jobId).then(r=>r.json()).then(d=>{
+            const pct=d.total>0?Math.round(d.progresso/d.total*100):0;
+            bar.style.width=pct+'%';
+            if(d.status==='concluido'){
+                clearInterval(timer);bar.style.width='100%';
+                texto.textContent='Indexação concluída!';
+                const r0=d.resultados&&d.resultados[0];
+                if(r0&&r0.sucesso){res.innerHTML='<p style="color:var(--success);margin-top:0.5rem;font-weight:600;">✓ TCC indexado com sucesso!</p>';
+                    setTimeout(()=>window.location.href='{{ url_for("tcc_validos.lista") }}',2000);}
+                else if(r0){res.innerHTML='<p style="color:var(--danger);margin-top:0.5rem;font-weight:600;">✕ Erro: '+(r0.erro||'desconhecido')+'</p>';}
+            }else{texto.textContent='A guardar na base de dados...';}
+        }).catch(()=>{});
+    },1500);
+})();
+</script>
+{% endblock %}

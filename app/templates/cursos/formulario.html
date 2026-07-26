@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% from "macros/forms.html" import campo, campo_textarea, flash_messages, botao %}
+
+{% block title %}{% if curso %}Editar{% else %}Adicionar{% endif %} Curso — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti {% if curso %}ti-edit{% else %}ti-plus{% endif %}'></i> {% if curso %}Editar Curso{% else %}Adicionar Novo Curso{% endif %}</h2>
+        <p>{% if curso %}Modificar os dados do curso {{ curso.nome }}{% else %}Registar um novo curso no sistema{% endif %}</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" class="form-async">
+        {{ campo('nome', 'Nome do Curso', obrigatorio=True, valor=curso.nome if curso else '', placeholder='Ex: Engenharia Informática') }}
+        
+        <div class="form-row">
+            {{ campo('departamento', 'Departamento', valor=curso.departamento if curso else '', placeholder='Ex: Ciências e Tecnologia') }}
+            {{ campo('codigo', 'Código (Sigla)', valor=curso.codigo if curso else '', placeholder='Ex: EI') }}
+        </div>
+        
+        {{ campo_textarea('descricao', 'Descrição', valor=curso.descricao if curso else '', placeholder='Detalhes opcionais sobre o curso...', linhas=3, max_chars=500) }}
+        
+        <div class="form-group">
+            <label>Estado do Curso</label>
+            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                <label class="form-check" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="activo" value="1" {% if not curso or curso.activo %}checked{% endif %} style="accent-color: var(--accent);">
+                    <span>Activo</span>
+                </label>
+                <label class="form-check" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="radio" name="activo" value="0" {% if curso and not curso.activo %}checked{% endif %} style="accent-color: var(--accent);">
+                    <span>Arquivado</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-footer">
+            {{ botao('Guardar Curso', icon='ti-save') }}
+            {{ botao('Cancelar', tipo='button', estilo='ghost', href=url_for('cursos.lista')) }}
+        </div>
+    </form>
+</div>
+{% endblock %}

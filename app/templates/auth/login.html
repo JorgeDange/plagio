@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IMETRO TFC v3 — Autenticação do Sistema de Gestão e Detecção de Plágio">
+    <title>Login — IMETRO TFC</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="login-page">
+
+    <div class="login-wrapper">
+
+        <!-- ======================== -->
+        <!-- LADO ESQUERDO: Formulário -->
+        <!-- ======================== -->
+        <div class="login-left">
+            <div class="login-form-inner">
+
+                <!-- Logo -->
+                <div class="login-brand">
+                    <div class="login-brand-icon">
+                        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="IMETRO Logo">
+                    </div>
+                </div>
+
+                <!-- Boas-vindas -->
+                <div class="login-welcome">
+                    <h1>Bem-vindo ao IMETRO TFC</h1>
+                    <p>Acesse o sistema de gestão e detecção de plágio para iniciar suas verificações.</p>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                  <div class="login-flash">
+                    {% for categoria, mensagem in messages %}
+                      <div class="form-alert form-alert-{% if categoria == 'sucesso' or categoria == 'success' %}success{% elif categoria == 'erro' or categoria == 'error' %}error{% elif categoria == 'aviso' or categoria == 'warning' %}warning{% else %}info{% endif %}">
+                        {% if categoria == 'sucesso' or categoria == 'success' %}<i class='ti ti-circle-check'></i>
+                        {% elif categoria == 'erro' or categoria == 'error' %}<i class='ti ti-circle-x'></i>
+                        {% elif categoria == 'aviso' or categoria == 'warning' %}<i class='ti ti-alert-circle'></i>
+                        {% else %}<i class='ti ti-info-circle'></i>{% endif %}
+                        <span>{{ mensagem }}</span>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                {% endwith %}
+
+                <!-- Formulário -->
+                <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next', '')) }}" class="form-async" id="login-form">
+                    
+                    <!-- Email -->
+                    <div class="login-field">
+                        <label class="login-field-label" for="email">
+                            Email Institucional <span class="required">*</span>
+                        </label>
+                        <div class="login-input-wrapper">
+                            <input type="email" id="email" name="email" 
+                                   placeholder="exemplo@imetro.ao" required>
+                            <i class='ti ti-mail field-icon'></i>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="login-field">
+                        <label class="login-field-label" for="password">
+                            Password <span class="required">*</span>
+                        </label>
+                        <div class="login-input-wrapper">
+                            <input type="password" id="password" name="password" 
+                                   placeholder="••••••••" required>
+                            <i class='ti ti-lock field-icon'></i>
+                            <button type="button" class="login-toggle-pw" id="toggle-pw" aria-label="Mostrar/Ocultar password">
+                                <i class='ti ti-eye-off'></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botão Entrar -->
+                    <button type="submit" class="login-submit-btn" id="btn-login">
+                        <i class='ti ti-login'></i> Entrar
+                    </button>
+                </form>
+
+                <!-- Divisor -->
+                <div class="login-divider">ou</div>
+
+                <!-- Esqueci a senha -->
+                <div class="login-forgot">
+                    <a href="#">Esqueceu a password?</a>
+                </div>
+
+                <!-- Acesso restrito -->
+                <div class="login-restricted">
+                    <i class='ti ti-shield-check'></i>
+                    Acesso restrito — apenas utilizadores autorizados
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                Copyright &copy; IMETRO, Todos os Direitos Reservados &nbsp;|&nbsp; 
+                <a href="#">Termos de Uso</a> &nbsp;|&nbsp; 
+                <a href="#">Política de Privacidade</a>
+            </div>
+        </div>
+
+        <!-- ========================== -->
+        <!-- LADO DIREITO: Showcase     -->
+        <!-- ========================== -->
+        <div class="login-right">
+
+            <!-- Background com transição de imagens -->
+            <div class="login-showcase-bg" id="showcase-bg">
+                <div class="bg-slide active" style="background-image: url('{{ url_for('static', filename='assets/imt.jpg') }}');"></div>
+                <div class="bg-slide" style="background-image: url('{{ url_for('static', filename='assets/imt.jpg') }}'); transform: scale(1.1);"></div>
+                <div class="bg-slide" style="background-image: url('{{ url_for('static', filename='assets/imt.jpg') }}'); background-position: top;"></div>
+            </div>
+
+            <!-- Overlay gradiente -->
+            <div class="login-showcase-overlay"></div>
+
+            <!-- Padrão decorativo -->
+            <div class="login-showcase-pattern"></div>
+
+            <!-- Conteúdo informativo -->
+            <div class="login-showcase-content">
+                <div class="login-showcase-icon">
+                    <i class='ti ti-search'></i>
+                </div>
+                <h2 class="login-showcase-title" id="showcase-title">
+                    Um Sistema Unificado para <em>Detecção Inteligente de Plágio</em>
+                </h2>
+                <p class="login-showcase-desc" id="showcase-desc">
+                    O IMETRO TFC oferece um centro de comando unificado para verificação acadêmica — 
+                    detectando plágio com precisão e garantindo a integridade dos trabalhos de conclusão de curso.
+                </p>
+            </div>
+
+            <!-- Indicadores de slide -->
+            <div class="login-showcase-dots" id="showcase-dots">
+                <span class="dot active" data-index="0"></span>
+                <span class="dot" data-index="1"></span>
+                <span class="dot" data-index="2"></span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/forms.js') }}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // ============================
+        // Toggle Password Visibility
+        // ============================
+        const toggleBtn = document.getElementById('toggle-pw');
+        const pwInput = document.getElementById('password');
+        if (toggleBtn && pwInput) {
+            toggleBtn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                if (pwInput.type === 'password') {
+                    pwInput.type = 'text';
+                    icon.classList.replace('ti-eye-off', 'ti-eye');
+                } else {
+                    pwInput.type = 'password';
+                    icon.classList.replace('ti-eye', 'ti-eye-off');
+                }
+            });
+        }
+
+        // ============================
+        // Showcase Background Slideshow
+        // ============================
+        const slides = document.querySelectorAll('#showcase-bg .bg-slide');
+        const dots = document.querySelectorAll('#showcase-dots .dot');
+        const titleEl = document.getElementById('showcase-title');
+        const descEl = document.getElementById('showcase-desc');
+
+        const slideData = [
+            {
+                title: 'Um Sistema Unificado para <em>Detecção Inteligente de Plágio</em>',
+                desc: 'O IMETRO TFC oferece um centro de comando unificado para verificação acadêmica — detectando plágio com precisão e garantindo a integridade dos trabalhos de conclusão de curso.'
+            },
+            {
+                title: 'Análise Avançada com <em>Inteligência Artificial</em>',
+                desc: 'Utilizando modelos de IA de última geração para comparar documentos, identificar padrões de similaridade e fornecer relatórios detalhados sobre originalidade.'
+            },
+            {
+                title: 'Garantindo a <em>Excelência Acadêmica</em>',
+                desc: 'Promovendo a integridade acadêmica através de verificações rigorosas e transparentes, contribuindo para a formação de profissionais éticos e competentes.'
+            }
+        ];
+
+        let currentSlide = 0;
+        let slideInterval;
+
+        function goToSlide(index) {
+            // Fade out all slides
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+
+            // Activate target
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+
+            // Animate text
+            if (titleEl && descEl) {
+                titleEl.style.opacity = '0';
+                titleEl.style.transform = 'translateY(15px)';
+                descEl.style.opacity = '0';
+                descEl.style.transform = 'translateY(15px)';
+
+                setTimeout(() => {
+                    titleEl.innerHTML = slideData[currentSlide].title;
+                    descEl.textContent = slideData[currentSlide].desc;
+
+                    titleEl.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    titleEl.style.opacity = '1';
+                    titleEl.style.transform = 'translateY(0)';
+
+                    setTimeout(() => {
+                        descEl.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                        descEl.style.opacity = '1';
+                        descEl.style.transform = 'translateY(0)';
+                    }, 150);
+                }, 400);
+            }
+        }
+
+        function nextSlide() {
+            goToSlide((currentSlide + 1) % slides.length);
+        }
+
+        function startSlideshow() {
+            slideInterval = setInterval(nextSlide, 5000);
+        }
+
+        // Click on dots
+        dots.forEach(dot => {
+            dot.addEventListener('click', function() {
+                clearInterval(slideInterval);
+                goToSlide(parseInt(this.dataset.index));
+                startSlideshow();
+            });
+        });
+
+        // Start
+        if (slides.length > 0) {
+            startSlideshow();
+        }
+
+        // ============================
+        // Button loading animation
+        // ============================
+        const form = document.getElementById('login-form');
+        const btnLogin = document.getElementById('btn-login');
+        if (form && btnLogin) {
+            form.addEventListener('submit', function() {
+                btnLogin.innerHTML = '<i class="ti ti-loader" style="animation: spin 1s linear infinite;"></i> A entrar...';
+                btnLogin.disabled = true;
+                btnLogin.style.opacity = '0.8';
+            });
+        }
+    });
+    </script>
+</body>
+</html>

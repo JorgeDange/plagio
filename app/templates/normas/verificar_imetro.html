@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Verificar Normas IMETRO 2014 — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-ruler-2' style="margin-right:8px; color:var(--accent)"></i> Normas IMETRO 2014</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Verificação de conformidade com o Regulamento de Trabalhos Académicos do IMETRO</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 900px; margin: 0 auto 2rem;">
+    <div class="card-header"><span class="card-title"><i class='ti ti-file'></i> Submeter Documento</span></div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group" style="margin-bottom:1.5rem;">
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">Carregue o trabalho para validar se cumpre com as regras estipuladas no manual IMETRO. Pode optar por utilizar também o motor de Inteligência Artificial para uma verificação aprofundada.</p>
+                <div class="form-upload-area" style="cursor:pointer;" onclick="this.querySelector('input').click()">
+                    <input type="file" name="ficheiro" accept=".pdf,.docx,.txt" required style="display:none;">
+                    <i class='ti ti-cloud-upload' style="font-size:2.5rem; color:var(--accent); display:block; margin-bottom:0.5rem;"></i>
+                    <span style="font-weight:600; display:block; margin-bottom:0.25rem;">Arraste o ficheiro ou clique para selecionar</span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">Formatos suportados: PDF, DOCX ou TXT</span>
+                </div>
+            </div>
+            
+            <div class="form-row" style="margin-bottom: 1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Título do TFC</label>
+                    <input type="text" name="titulo" class="form-control" placeholder="Ex: Análise da Gestão de Resíduos Sólidos em Luanda">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Autor(es)</label>
+                    <input type="text" name="autores" class="form-control" placeholder="Ex: João Silva, Maria Santos">
+                </div>
+            </div>
+            <div class="form-row" style="margin-bottom: 1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Curso</label>
+                    <input type="text" name="curso" class="form-control" placeholder="Ex: Engenharia Informática">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">Orientador</label>
+                    <input type="text" name="orientador" class="form-control" placeholder="Ex: Prof. Dr. António Lopes">
+                </div>
+                <div class="form-group" style="width: 120px;">
+                    <label class="form-label">Ano</label>
+                    <input type="text" name="ano" class="form-control" placeholder="2025">
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 2rem; background: var(--bg); padding: 1rem; border-radius: var(--radius); border: 1px solid rgba(0, 43, 92, 0.1);">
+                <label style="display:flex; align-items:flex-start; gap:0.75rem; cursor:pointer;">
+                    <input type="checkbox" name="usar_ia" id="usar_ia" value="1" style="width:1.2rem; height:1.2rem; margin-top:0.1rem;">
+                    <div>
+                        <span style="font-weight:600; font-size:1rem; display:block; margin-bottom:0.25rem;">Utilizar IA Unimetro Inspector</span>
+                        <span style="font-size:0.85rem; color:var(--text-muted); line-height:1.4; display:block;">Se ativo, envia o documento para análise avançada através do modelo LLM configurado. O relatório apresentará uma avaliação detalhada e recomendações diretas.</span>
+                    </div>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full"><i class='ti ti-zoom-check'></i> Auditar Documento (IMETRO 2014)</button>
+        </form>
+    </div>
+</div>
+
+{% if resultado %}
+<div style="margin-top:2rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;">
+    <h2 style="font-size:1.25rem;color:var(--text);"><i class='ti ti-chart-pie' style='color:var(--accent)'></i> Relatório para: <strong>{{ resultado.nome_ficheiro }}</strong></h2>
+</div>
+
+{# ── RESULTADOS LOCAIS (SEMPRE EXIBIDOS) ── #}
+{% set local = resultado.local %}
+<div class="card" style="border-top:4px solid var(--accent); margin-bottom: 2rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-server'></i> Verificação Local (Regras IMETRO)</span>
+        {% if local.score is defined %}
+        <span class="badge {% if local.score >= 85 %}badge-conforme{% elif local.score >= 60 %}badge-parcial{% else %}badge-nao-conforme{% endif %}">{{ local.nivel }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if local.score is defined %}
+        <div style="text-align:center; margin-bottom:2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+            <div style="font-size:3rem; font-weight:700; color: var(--accent);">{{ local.score|round(0)|int }}<span style="font-size:1.5rem">%</span></div>
+            <p style="color:var(--text-muted);font-size:0.8rem;">Índice de Conformidade IMETRO (verificação local)</p>
+            <div class="pct-bar-track" style="max-width:300px;margin:0.75rem auto;">
+                <div class="pct-bar-fill {% if local.score >= 85 %}pct-bar-fill-baixo{% elif local.score >= 60 %}pct-bar-fill-moderado{% else %}pct-bar-fill-alto{% endif %}" style="width:{{ local.score }}%"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="abnt-checklist">
+            {% if local.erros %}
+                <h4 style="font-size:0.95rem; margin:1rem 0 0.75rem; color:var(--danger)"><i class='ti ti-circle-x'></i> Inconformidades Encontradas</h4>
+                {% for err in local.erros %}
+                    <div class="abnt-item abnt-item-fail">
+                        <i class='ti ti-alert-circle' style='color:var(--danger)'></i> 
+                        <strong>{{ err.descricao if err.descricao is defined else err }}</strong>
+                        {% if err.mensagem is defined %}
+                        <div style="font-size:0.85rem; color:var(--text-muted); margin-left: 1.7rem; margin-top: 0.35rem; line-height: 1.4;">{{ err.mensagem }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if local.avisos %}
+                <h4 style="font-size:0.95rem; margin:1.5rem 0 0.75rem; color:var(--warning)"><i class='ti ti-bulb'></i> Sugestões de Melhoria</h4>
+                {% for av in local.avisos %}
+                    <div class="abnt-item abnt-item-warn">
+                        <i class='ti ti-alert-triangle' style='color:var(--warning)'></i> 
+                        <strong>{{ av.descricao if av.descricao is defined else av }}</strong>
+                        {% if av.mensagem is defined %}
+                        <div style="font-size:0.85rem; color:var(--text-muted); margin-left: 1.7rem; margin-top: 0.35rem; line-height: 1.4;">{{ av.mensagem }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if local.aprovadas %}
+                <h4 style="font-size:0.95rem; margin:1.5rem 0 0.75rem; color:var(--success)"><i class='ti ti-checks'></i> Elementos Conformes</h4>
+                {% for ap in local.aprovadas %}
+                    <div class="abnt-item abnt-item-ok" style="padding:0.5rem;"><i class='ti ti-circle-check' style='color:var(--success)'></i> <span style="font-size:0.85rem">{{ ap }}</span></div>
+                {% endfor %}
+            {% endif %}
+
+            {% if not local.erros and not local.avisos and not local.aprovadas %}
+                <div class="abnt-item abnt-item-ok" style="padding:2rem; text-align:center; border: 1px dashed var(--success); background: #f0fdf4; border-radius: var(--radius);">
+                    <i class='ti ti-shield-check' style='color:var(--success); font-size:3rem; display:block; margin-bottom:1rem;'></i> 
+                    <span style="font-size:1.1rem; font-weight:600; color:var(--success)">Parabéns! O documento cumpre totalmente as normas estruturais avaliadas.</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── RESULTADOS IA (OPCIONAL) ── #}
+{% if resultado.ia %}
+{% set ia = resultado.ia %}
+<div class="card" style="border-top:4px solid var(--accent); margin-bottom: 2rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-robot'></i> Análise do Unimetro Inspector (IA)</span>
+        {% if ia.classificacao %}
+        <span class="badge {% if ia.classificacao == 'CONFORME' %}badge-conforme{% elif ia.classificacao == 'NÃO CONFORME' %}badge-nao-conforme{% else %}badge-parcial{% endif %}">{{ ia.classificacao }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if ia.erro %}
+        <div style="padding: 1rem; background: var(--danger-bg); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger); border-radius: var(--radius); margin-bottom: 1rem;">
+            <i class='ti ti-alert-circle'></i> <strong>Erro na análise IA:</strong> {{ ia.erro }}
+        </div>
+        {% endif %}
+
+        {% if ia.pontuacao_total is defined %}
+        <div style="text-align:center; margin-bottom:2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+            <div style="font-size:3rem; font-weight:700; color: var(--accent);">{{ ia.pontuacao_total }}<span style="font-size:1.5rem">/100</span></div>
+            <p style="color:var(--text-muted);font-size:0.8rem;">Pontuação Global (Unimetro Inspector)</p>
+        </div>
+        {% endif %}
+        
+        {% if ia.categorias %}
+        <h4 style="font-size:0.95rem; margin:1rem 0 0.75rem; color:var(--text); display:flex; align-items:center; gap:0.5rem;"><i class='ti ti-chart-bar'></i> Pontuação por Categoria</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            {% for cat in ia.categorias %}
+            <div style="text-align:center; padding: 1rem; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border);">
+                <div style="font-size:1.5rem; font-weight:700; color: var(--accent);">{{ cat.pontuacao }}<span style="font-size:0.85rem">/{{ cat.max }}</span></div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.25rem;">{{ cat.nome }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if ia.infracoes %}
+        <h4 style="font-size:0.95rem; margin:1.5rem 0 0.75rem; color:var(--danger)"><i class='ti ti-circle-x'></i> Infracções Detectadas</h4>
+        {% for inf in ia.infracoes %}
+            <div class="abnt-item abnt-item-fail">
+                <i class='ti ti-alert-circle' style='color:var(--danger)'></i>
+                <strong>{{ inf.codigo if inf.codigo is defined else '' }} — {{ inf.descricao if inf.descricao is defined else inf }}</strong>
+                {% if inf.gravidade is defined %}
+                <span class="badge badge-neutral" style="font-size:0.7rem; margin-left:0.5rem;">{{ inf.gravidade }}</span>
+                {% endif %}
+                {% if inf.detalhe is defined %}
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-left: 1.7rem; margin-top: 0.35rem; line-height: 1.4;">{{ inf.detalhe }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if ia.recomendacoes %}
+        <h4 style="font-size:0.95rem; margin:1.5rem 0 0.75rem; color:var(--info)"><i class='ti ti-info-circle'></i> Recomendações</h4>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for rec in ia.recomendacoes %}
+            <div style="padding: 0.75rem 1rem; background: var(--info-bg); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: var(--radius);">
+                <span style="font-size:0.85rem; color:var(--text); line-height: 1.5;"><strong style="color:var(--info);">💡</strong> {{ rec }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<style>
+@media print {
+    .page-header .btn, form, .sidebar, .topbar { display: none !important; }
+    .card { break-inside: avoid; page-break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+    body { background: white !important; }
+}
+</style>
+{% endblock %}

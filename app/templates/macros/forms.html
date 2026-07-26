@@ -1,0 +1,117 @@
+{% macro campo(name, label, tipo='text', valor='', placeholder='',
+               obrigatorio=False, ajuda='', erro='', desativado=False) %}
+<div class="form-group">
+  <label for="{{ name }}">
+    {{ label }}
+    {% if obrigatorio %}<span class="obrigatorio">*</span>{% endif %}
+  </label>
+  <input type="{{ tipo }}" id="{{ name }}" name="{{ name }}" 
+         class="form-control {% if erro %}is-invalid{% endif %}" 
+         value="{{ valor }}" placeholder="{{ placeholder }}" 
+         {% if obrigatorio %}required{% endif %} 
+         {% if desativado %}disabled{% endif %}>
+  
+  {% if erro %}
+    <span class="form-error">
+      <i class='ti ti-alert-circle'></i> {{ erro }}
+    </span>
+  {% elif ajuda %}
+    <span class="form-help">{{ ajuda }}</span>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro campo_select(name, label, opcoes, valor='',
+                      obrigatorio=False, ajuda='', erro='') %}
+<div class="form-group">
+  <label for="{{ name }}">
+    {{ label }}
+    {% if obrigatorio %}<span class="obrigatorio">*</span>{% endif %}
+  </label>
+  <select id="{{ name }}" name="{{ name }}" 
+          class="form-control {% if erro %}is-invalid{% endif %}" 
+          {% if obrigatorio %}required{% endif %}>
+    <option value="">Seleccionar...</option>
+    {% for op in opcoes %}
+      <option value="{{ op.valor }}" {% if valor|string == op.valor|string %}selected{% endif %}>{{ op.texto }}</option>
+    {% endfor %}
+  </select>
+  {% if erro %}
+    <span class="form-error"><i class='ti ti-alert-circle'></i> {{ erro }}</span>
+  {% elif ajuda %}
+    <span class="form-help">{{ ajuda }}</span>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro campo_textarea(name, label, valor='', placeholder='',
+                        obrigatorio=False, linhas=4, max_chars=0,
+                        ajuda='', erro='') %}
+<div class="form-group">
+  <label for="{{ name }}">
+    {{ label }}
+    {% if obrigatorio %}<span class="obrigatorio">*</span>{% endif %}
+  </label>
+  <textarea id="{{ name }}" name="{{ name }}" rows="{{ linhas }}"
+            class="form-control {% if erro %}is-invalid{% endif %}"
+            placeholder="{{ placeholder }}"
+            {% if obrigatorio %}required{% endif %}
+            {% if max_chars %}maxlength="{{ max_chars }}"{% endif %}>{{ valor }}</textarea>
+
+  <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+    {% if erro %}
+      <span class="form-error"><i class='ti ti-alert-circle'></i> {{ erro }}</span>
+    {% elif ajuda %}
+      <span class="form-help">{{ ajuda }}</span>
+    {% else %}
+      <span></span>
+    {% endif %}
+    {% if max_chars %}
+      <span class="char-counter" id="{{ name }}-counter">0 / {{ max_chars }}</span>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro campo_upload(name, label, tipos='.pdf,.docx', ajuda='', multiplo=False) %}
+<div class="form-group">
+  <label>{{ label }}</label>
+  <label class="form-upload-area" for="{{ name }}">
+    <i class='ti ti-upload' style="font-size: 2.5rem; margin-bottom: 0.5rem; display: block;"></i>
+    <span style="font-weight: 500; display: block; margin-bottom: 0.25rem;">Clique ou arraste o ficheiro aqui</span>
+    {% if ajuda %}<span style="font-size: 0.8rem;">{{ ajuda }}</span>{% endif %}
+    <span id="{{ name }}-nome" style="display: block; margin-top: 0.5rem; font-weight: 600; color: var(--accent);"></span>
+  </label>
+  <input type="file" id="{{ name }}" name="{{ name }}" accept="{{ tipos }}" {% if multiplo %}multiple{% endif %} required>
+</div>
+{% endmacro %}
+
+{% macro flash_messages() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div style="margin-bottom: 1.5rem;">
+    {% for categoria, mensagem in messages %}
+      <div class="form-alert form-alert-{% if categoria == 'sucesso' or categoria == 'success' %}success{% elif categoria == 'erro' or categoria == 'error' %}error{% elif categoria == 'aviso' or categoria == 'warning' %}warning{% else %}info{% endif %}">
+        {% if categoria == 'sucesso' or categoria == 'success' %}<i class='ti ti-circle-check'></i>
+        {% elif categoria == 'erro' or categoria == 'error' %}<i class='ti ti-circle-x'></i>
+        {% elif categoria == 'aviso' or categoria == 'warning' %}<i class='ti ti-alert-circle'></i>
+        {% else %}<i class='ti ti-info-circle'></i>{% endif %}
+        <span>{{ mensagem }}</span>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+{% endmacro %}
+
+{% macro botao(texto, tipo='submit', estilo='primary', icon='', href='', id='', onclick='') %}
+{% if href %}
+  <a href="{{ href }}" class="btn btn-{{ estilo }}" {% if id %}id="{{ id }}"{% endif %} {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    {% if icon %}<i class="ti ti-{{ icon | replace('bx-', '') | replace('ti-', '') }}"></i>{% endif %} {{ texto }}
+  </a>
+{% else %}
+  <button type="{{ tipo }}" class="btn btn-{{ estilo }}" {% if id %}id="{{ id }}"{% endif %} {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    {% if icon %}<i class="ti ti-{{ icon | replace('bx-', '') | replace('ti-', '') }}"></i>{% endif %} {{ texto }}
+  </button>
+{% endif %}
+{% endmacro %}

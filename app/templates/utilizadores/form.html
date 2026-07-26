@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import campo, campo_select, flash_messages, botao %}
+
+{% block title %}{% if utilizador %}Editar{% else %}Novo{% endif %} Utilizador — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti {% if utilizador %}ti-edit{% else %}ti-user-plus{% endif %}'></i> {% if utilizador %}Editar Utilizador{% else %}Novo Utilizador{% endif %}</h2>
+        <p>{% if utilizador %}Actualizar dados de {{ utilizador['nome'] }}{% else %}Criar nova conta de acesso ao sistema{% endif %}</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" action="{% if utilizador %}{{ url_for('utilizadores.editar', id=utilizador['id']) }}{% else %}{{ url_for('utilizadores.novo') }}{% endif %}" class="form-async">
+        
+        <div class="form-row">
+            {{ campo('nome', 'Nome completo', obrigatorio=True, valor=utilizador['nome'] if utilizador else '', placeholder='Ex.: João Silva') }}
+            {{ campo('email', 'Email', tipo='email', obrigatorio=True, valor=utilizador['email'] if utilizador else '', placeholder='Ex.: joao@imetro.ao') }}
+        </div>
+
+        {% set opcoes_papel = [
+            {'valor': 'administrador', 'texto': 'Administrador — Acesso total'},
+            {'valor': 'carregador', 'texto': 'Carregador — Submissão de Trabalhos'},
+            {'valor': 'verificador', 'texto': 'Verificador — Análise de plágio'},
+            {'valor': 'aprovador', 'texto': 'Aprovador — Decisão final'}
+        ] %}
+        {{ campo_select('papel', 'Papel no sistema', opcoes=opcoes_papel, obrigatorio=True, valor=utilizador['papel'] if utilizador else '') }}
+
+        {% if utilizador %}
+            <div class="form-row">
+                {{ campo('password', 'Palavra-passe', tipo='password', obrigatorio=False, ajuda='Deixe em branco para não alterar') }}
+                {{ campo('password_confirmar', 'Confirmar palavra-passe', tipo='password', obrigatorio=False) }}
+            </div>
+        {% else %}
+            <div class="form-row">
+                {{ campo('password', 'Palavra-passe', tipo='password', obrigatorio=True, ajuda='Mínimo 8 caracteres') }}
+                {{ campo('password_confirmar', 'Confirmar palavra-passe', tipo='password', obrigatorio=True) }}
+            </div>
+        {% endif %}
+
+        <!-- Legenda dos papéis -->
+        <div style="background: var(--border-light); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+            <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem;">
+                <i class='ti ti-info-circle'></i> Permissões por papel:
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.3rem;">
+                <span><strong style="color:#7c3aed;">Administrador</strong> — Acesso total ao sistema</span>
+                <span><strong style="color:#0d9488;">Carregador</strong> — Submeter trabalhos para verificação</span>
+                <span><strong style="color:#d97706;">Verificador</strong> — Executar verificações de plágio</span>
+                <span><strong style="color:#059669;">Aprovador</strong> — Aprovar ou rejeitar trabalhos verificados</span>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            {{ botao('Guardar' if utilizador else 'Criar Utilizador', icon='ti-device-floppy') }}
+            {{ botao('Cancelar', tipo='button', estilo='ghost', href=url_for('utilizadores.lista')) }}
+        </div>
+    </form>
+</div>
+{% endblock %}

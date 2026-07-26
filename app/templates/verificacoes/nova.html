@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import campo_select, flash_messages, botao %}
+
+{% block title %}Nova Verificação de Plágio — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti ti-zoom-check' style="color:var(--accent);margin-right:8px;"></i> Nova Verificação de Plágio</h2>
+        <p>Selecione o trabalho a analisar e configure as opções de deteção.</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" action="{{ url_for('verificacoes.iniciar') }}" class="form-async">
+        <div class="form-section-title">
+            <i class="ti ti-file-text" style="color: var(--accent); font-size: 1.1rem;"></i> Passo 1: Selecionar o Trabalho
+        </div>
+
+        <div class="form-group">
+            <label for="tcc_suspeito_id">Trabalho a Analisar <span class="obrigatorio">*</span></label>
+            <select name="tcc_suspeito_id" id="tcc_suspeito_id" class="form-control" required>
+                <option value="">Selecionar documento...</option>
+                {% for s in suspeitos %}
+                <option value="{{ s.id }}" {% if request.args.get('tcc_id')|int == s.id %}selected{% endif %}>
+                    {{ s.titulo or '(Sem título)' }} — {{ s.autor }} ({{ s.curso_nome or 'S/C' }})
+                    {% if s.estado == 'verificado' %} [Já verificado: {{ s.ultima_pct_plagio|default('?') }}%]{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title">
+            <i class="ti ti-settings" style="color: var(--accent); font-size: 1.1rem;"></i> Passo 2: Definições da Verificação
+        </div>
+
+        {% set opcoes_curso = [] %}
+        {% for c in cursos %}
+            {% set _ = opcoes_curso.append({'valor': c.id, 'texto': c.nome}) %}
+        {% endfor %}
+        {{ campo_select('curso_filtro_id', 'Filtrar por Curso', opcoes=opcoes_curso, ajuda='Compara apenas com trabalhos deste curso') }}
+
+        <div class="form-group">
+            <label>Nível mínimo de alerta (Etapa 2 — Verificação na Base Local)</label>
+            <input type="range" name="limiar" class="form-range" min="0.50" max="0.99" step="0.01" value="{{ limiar_default }}" oninput="document.getElementById('limiar-val').textContent = Math.round(this.value * 100) + '%'">
+            <div class="range-labels" style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); font-weight:500; margin-top: 0.5rem;">
+                <span>Rigoroso (50%)</span>
+                <span id="limiar-val" style="font-weight:700; color:var(--accent); font-size:14px;">{{ (limiar_default|float * 100)|round|int }}%</span>
+                <span>Exigente (99%)</span>
+            </div>
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title">
+            <i class="ti ti-adjustments" style="color: var(--accent); font-size: 1.1rem;"></i> Passo 3: Opções Adicionais
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:1.25rem; margin-bottom:1.5rem;">
+            <label class="form-toggle" style="user-select: none;">
+                <input type="checkbox" name="pesquisa_externa_ativa" value="1">
+                <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                <span style="font-size:0.875rem; font-weight:500; color:var(--text);">Activar pesquisa em repositórios académicos na internet (Etapa 1)</span>
+            </label>
+            
+            <label class="form-toggle" style="user-select: none;">
+                <input type="checkbox" name="verificar_abnt" value="1" checked>
+                <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                <span style="font-size:0.875rem; font-weight:500; color:var(--text);">Activar verificação de normas (ABNT/APA) e análise aprofundada por inteligência artificial (Etapa 3)</span>
+            </label>
+        </div>
+        
+        <div class="card-opcoes" style="margin-top: 1.5rem; background: var(--white); border: 1px solid var(--border); box-shadow: var(--card-shadow); border-radius: var(--radius); padding: 1.5rem;">
+          <div class="card-opcoes-cabecalho" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <i class='ti ti-book' style="font-size: 1.35rem; color: var(--accent);"></i>
+            <h3 style="margin: 0; font-size: 1rem; color: var(--text); font-weight: 600;">Verificação de Normas IMETRO 2014</h3>
+          </div>
+
+          <div class="opcao-linha" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <div class="opcao-info" style="flex: 1; padding-right: 2rem;">
+              <label class="opcao-titulo" for="normas_incluir" style="display: block; font-weight: 600; font-size:13px; margin-bottom: 0.25rem; color:var(--text);">
+                Verificar conformidade com as Normas IMETRO
+              </label>
+              <span class="opcao-descricao" style="font-size: 0.85rem; color: var(--text-muted); display: block; line-height:1.4;">
+                Analisa automaticamente 16 regras de estrutura, formatação,
+                citações e metodologia. Sempre disponível, sem internet.
+              </span>
+            </div>
+            <label class="form-toggle" style="margin: 0;">
+              <input type="checkbox" id="normas_incluir" name="normas_incluir" value="on">
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <div class="opcao-linha opcao-aninhada" id="opcao-normas-ia"
+               style="display: none; justify-content: space-between; align-items: flex-start; padding-top: 1.5rem; border-top: 1px solid var(--border-light);">
+            <div class="opcao-info" style="flex: 1; padding-right: 2rem;">
+              <label class="opcao-titulo" for="normas_ia" style="display: block; font-weight: 600; font-size:13px; margin-bottom: 0.25rem; color:var(--text);">
+                Análise aprofundada por Inteligência Artificial
+              </label>
+              <span class="opcao-descricao" style="font-size: 0.85rem; color: var(--text-muted); display: block; line-height:1.4;">
+                Envia o texto para análise mais detalhada. Demorado.
+                {% if not opcoes_normas.ia_disponivel %}
+                  <span class="badge badge-reprovado" style="margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">
+                    <i class='ti ti-info-circle'></i> Requer configuração de IA activa
+                  </span>
+                {% endif %}
+              </span>
+            </div>
+            <label class="form-toggle" style="margin: 0; {% if not opcoes_normas.ia_disponivel %}opacity: 0.5; cursor: not-allowed;{% endif %}">
+              <input type="checkbox" id="normas_ia" name="normas_ia" value="on"
+                     {% if not opcoes_normas.ia_disponivel %}disabled{% endif %}>
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            </label>
+          </div>
+        </div>
+
+        <script>
+          // Mostrar/esconder opção IA conforme normas_incluir está activo
+          document.getElementById('normas_incluir').addEventListener('change', function() {
+              var opcaoIa = document.getElementById('opcao-normas-ia');
+              if (opcaoIa) {
+                  opcaoIa.style.display = this.checked ? 'flex' : 'none';
+                  if (!this.checked) {
+                      document.getElementById('normas_ia').checked = false;
+                  }
+              }
+          });
+        </script>
+
+        <style>
+          /* Premium style overrides for toggles inside this form */
+          .form-toggle input:checked + .toggle-track { background: var(--accent) !important; }
+        </style>
+
+        <div class="form-footer" style="margin-top: 2rem;">
+            {{ botao('Iniciar Verificação', icon='ti-rocket', estilo='primary') }}
+            {{ botao('Cancelar', tipo='button', estilo='ghost', href=url_for('tcc_suspeitos.lista')) }}
+        </div>
+    </form>
+</div>
+{% endblock %}

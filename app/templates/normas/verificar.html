@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Verificar Normas — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-ruler-2' style="margin-right:8px; color:var(--accent)"></i> Verificação de Conformidade Académica</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Análise simultânea de estrutura segundo as normas ABNT (NBR) e APA (7ª Edição)</p>
+    </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+    <div class="card">
+        <div class="card-header"><span class="card-title"><i class='ti ti-file'></i> Enviar Documento</span></div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">O sistema irá analisar automaticamente o documento e validar o seu conteúdo contra os critérios das <strong>Normas ABNT</strong> e das <strong>Normas APA</strong> em simultâneo.</p>
+                    <div class="form-upload-area" style="cursor:pointer;" onclick="this.querySelector('input').click()">
+                        <input type="file" name="ficheiro" accept=".pdf,.docx,.txt" required style="display:none;">
+                        <i class='ti ti-file-upload' style="font-size:2.5rem; display:block; margin-bottom:0.5rem;"></i>
+                        <span style="font-weight:500; display:block; margin-bottom:0.25rem;">Arraste o ficheiro ou clique</span>
+                        <span style="font-size:0.75rem;">PDF, DOCX ou TXT</span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full"><i class='ti ti-ruler-2'></i> Analisar Conformidade (ABNT e APA)</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><span class="card-title"><i class='ti ti-info-circle'></i> Manuais Oficiais</span></div>
+        <div class="card-body">
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 1rem;">Faça o download dos manuais oficiais das normas aplicáveis para preparar o seu documento corretamente.</p>
+            <div class="detail-list">
+                <a href="#" class="detail-row" style="text-decoration:none;"><span class="detail-label"><i class='ti ti-file-text' style="color:var(--danger)"></i> Manual ABNT 2024</span><span class="detail-value"><i class='ti ti-download'></i></span></a>
+                <a href="#" class="detail-row" style="text-decoration:none;"><span class="detail-label"><i class='ti ti-file-text' style="color:var(--success)"></i> Manual APA (7ª Ed.)</span><span class="detail-value"><i class='ti ti-download'></i></span></a>
+            </div>
+            <a href="{{ url_for('normas.referencia') }}" class="btn btn-ghost btn-full" style="margin-top:1rem;"><i class='ti ti-books'></i> Ver Referência Rápida (ABNT e APA)</a>
+        </div>
+    </div>
+</div>
+
+{% if resultado %}
+<div style="margin-top:2rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;">
+    <h2 style="font-size:1.25rem;color:var(--text);"><i class='ti ti-chart-line' style='color:var(--warning)'></i> Resultados para: <strong>{{ resultado.nome_ficheiro }}</strong></h2>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;">
+    <!-- COLUNA ABNT -->
+    <div class="card" style="border-top:4px solid var(--accent);">
+        <div class="card-header"><span class="card-title">Norma ABNT (NBR)</span>
+            <span class="badge {% if resultado.abnt.score >= 80 %}badge-conforme{% elif resultado.abnt.score >= 50 %}badge-parcial{% else %}badge-nao-conforme{% endif %}">{{ resultado.abnt.nivel }}</span>
+        </div>
+        <div class="card-body">
+            <div style="text-align:center;margin-bottom:1.25rem;">
+                <div style="font-size:2.5rem;font-weight:700;color:var(--text);">{{ resultado.abnt.score|round(0)|int }}%</div>
+                <p style="color:var(--text-muted);font-size:0.8rem;">Índice de Conformidade ABNT</p>
+                <div class="pct-bar-track" style="max-width:300px;margin:0.75rem auto;">
+                    <div class="pct-bar-fill {% if resultado.abnt.score >= 80 %}pct-bar-fill-baixo{% elif resultado.abnt.score >= 50 %}pct-bar-fill-moderado{% else %}pct-bar-fill-alto{% endif %}" style="width:{{ resultado.abnt.score }}%"></div>
+                </div>
+            </div>
+
+            <div class="abnt-checklist">
+                {% if resultado.abnt.erros %}
+                    <h4 style="font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--danger)"><i class='ti ti-alert-circle'></i> Obrigatório corrigir</h4>
+                    {% for err in resultado.abnt.erros %}
+                        <div class="abnt-item abnt-item-fail">
+                            <i class='ti ti-circle-x' style='color:var(--danger)'></i> <strong>{{ err.descricao }}</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-left: 1.5rem; margin-top: 0.25rem;">{{ err.mensagem }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if resultado.abnt.avisos %}
+                    <h4 style="font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--warning)"><i class='ti ti-bulb'></i> Sugestões de melhoria</h4>
+                    {% for av in resultado.abnt.avisos %}
+                        <div class="abnt-item abnt-item-warn">
+                            <i class='ti ti-alert-triangle' style='color:var(--warning)'></i> <strong>{{ av.descricao }}</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-left: 1.5rem; margin-top: 0.25rem;">{{ av.mensagem }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if resultado.abnt.aprovadas %}
+                    <h4 style="font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--success)"><i class='ti ti-checks'></i> Tudo certo aqui</h4>
+                    {% for ap in resultado.abnt.aprovadas %}
+                        <div class="abnt-item abnt-item-ok" style="padding:0.5rem;"><i class='ti ti-circle-check' style='color:var(--success)'></i> <span style="font-size:0.85rem">{{ ap }}</span></div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUNA APA -->
+    <div class="card" style="border-top:4px solid var(--success);">
+        <div class="card-header"><span class="card-title">Norma APA (7ª Edição)</span>
+            <span class="badge {% if resultado.apa.score >= 80 %}badge-conforme{% elif resultado.apa.score >= 50 %}badge-parcial{% else %}badge-nao-conforme{% endif %}">{{ resultado.apa.nivel }}</span>
+        </div>
+        <div class="card-body">
+            <div style="text-align:center;margin-bottom:1.25rem;">
+                <div style="font-size:2.5rem;font-weight:700;color:var(--text);">{{ resultado.apa.score|round(0)|int }}%</div>
+                <p style="color:var(--text-muted);font-size:0.8rem;">Índice de Conformidade APA</p>
+                <div class="pct-bar-track" style="max-width:300px;margin:0.75rem auto;">
+                    <div class="pct-bar-fill {% if resultado.apa.score >= 80 %}pct-bar-fill-baixo{% elif resultado.apa.score >= 50 %}pct-bar-fill-moderado{% else %}pct-bar-fill-alto{% endif %}" style="width:{{ resultado.apa.score }}%"></div>
+                </div>
+            </div>
+
+            <div class="abnt-checklist">
+                {% if resultado.apa.erros %}
+                    <h4 style="font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--danger)"><i class='ti ti-alert-circle'></i> Obrigatório corrigir</h4>
+                    {% for err in resultado.apa.erros %}
+                        <div class="abnt-item abnt-item-fail">
+                            <i class='ti ti-circle-x' style='color:var(--danger)'></i> <strong>{{ err.descricao }}</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-left: 1.5rem; margin-top: 0.25rem;">{{ err.mensagem }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if resultado.apa.avisos %}
+                    <h4 style="font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--warning)"><i class='ti ti-bulb'></i> Sugestões de melhoria</h4>
+                    {% for av in resultado.apa.avisos %}
+                        <div class="abnt-item abnt-item-warn">
+                            <i class='ti ti-alert-triangle' style='color:var(--warning)'></i> <strong>{{ av.descricao }}</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-left: 1.5rem; margin-top: 0.25rem;">{{ av.mensagem }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if resultado.apa.aprovadas %}
+                    <h4 style="font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--success)"><i class='ti ti-checks'></i> Tudo certo aqui</h4>
+                    {% for ap in resultado.apa.aprovadas %}
+                        <div class="abnt-item abnt-item-ok" style="padding:0.5rem;"><i class='ti ti-circle-check' style='color:var(--success)'></i> <span style="font-size:0.85rem">{{ ap }}</span></div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

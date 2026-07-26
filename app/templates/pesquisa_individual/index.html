@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}Pesquisa em Repositórios Externos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-world' style="margin-right:8px; color:var(--accent)"></i> Pesquisa Individual</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">Verifique plágio avulso em repositórios académicos globais</p>
+    </div>
+</div>
+
+<div class="form-container" style="max-width: 900px;">
+    <div class="form-header">
+        <h2><i class='ti ti-zoom-check'></i> Iniciar Nova Pesquisa</h2>
+        <p>Cole o texto, pesquise por título ou carregue um ficheiro.</p>
+    </div>
+
+    <!-- TABS CUSTOMIZADAS -->
+    <div style="display: flex; gap: 10px; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+        <button type="button" class="btn btn-primary" data-tab="tab-texto" id="btn-tab-texto"><i class='ti ti-text-recognition'></i> Colar Texto</button>
+        <button type="button" class="btn btn-ghost" data-tab="tab-titulo" id="btn-tab-titulo"><i class='ti ti-heading'></i> Por Título</button>
+        <button type="button" class="btn btn-ghost" data-tab="tab-ficheiro" id="btn-tab-ficheiro"><i class='ti ti-upload'></i> Carregar Ficheiro</button>
+    </div>
+
+    <form id="form-pesquisa" onsubmit="executarPesquisa(event)">
+        <input type="hidden" name="tipo_entrada" id="tipo_entrada" value="texto">
+        
+        <!-- Tab Texto -->
+        <div id="tab-texto" class="tab-content">
+            <div class="form-group">
+                <label class="form-label">Texto a verificar <span class="obrigatorio">*</span></label>
+                <textarea class="form-control" name="texto" id="texto" rows="6" placeholder="Cole aqui o trecho de texto a verificar..."></textarea>
+                <span class="form-help" style="text-align:right;"><span id="contador-texto">0</span> palavras</span>
+            </div>
+        </div>
+        
+        <!-- Tab Titulo -->
+        <div id="tab-titulo" class="tab-content" style="display: none;">
+            <div class="form-group">
+                <label class="form-label">Título ou palavras-chave <span class="obrigatorio">*</span></label>
+                <input type="text" class="form-control" name="titulo" id="titulo" placeholder="Título ou palavras-chave do trabalho">
+                <span class="form-help"><i class='ti ti-info-circle'></i> Útil para verificar se um trabalho já foi publicado</span>
+            </div>
+        </div>
+        
+        <!-- Tab Ficheiro -->
+        <div id="tab-ficheiro" class="tab-content" style="display: none;">
+            <div class="form-group">
+                <label class="form-label">Documento <span class="obrigatorio">*</span></label>
+                <div class="form-upload-area" id="drop-area" onclick="document.getElementById('ficheiro').click()">
+                    <i class='ti ti-cloud-upload' style="font-size: 3rem; color: var(--accent);"></i>
+                    <p style="margin: 10px 0; font-weight: 500;">Arraste e largue o seu ficheiro aqui ou clique para selecionar</p>
+                    <input type="file" name="ficheiro" id="ficheiro" accept=".pdf,.docx,.txt" onchange="atualizarNomeFicheiro(this)">
+                    <span class="form-help" id="file-name">Formatos suportados: PDF, DOCX, TXT. Tamanho máximo: 10 MB.</span>
+                </div>
+            </div>
+        </div>
+
+        <hr class="form-divider">
+
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Fontes a usar</label>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                    {% for f in fontes_disponiveis %}
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
+                        <input type="checkbox" name="fontes[]" value="{{ f.id }}" {% if f.ativa %}checked{% endif %}>
+                        <span title="{{ f.descricao }}">{{ f.nome }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Nível mínimo para alerta (%)</label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <input type="range" class="form-input" style="flex: 1;" name="limiar" id="limiar" min="40" max="95" value="65" oninput="atualizarLimiar(this.value)">
+                    <span id="limiar-display" class="badge badge-pendente" style="font-size: 1rem;">65%</span>
+                </div>
+                <span class="form-help">Só mostrar resultados com semelhança acima de <span id="limiar-texto">65</span>%</span>
+            </div>
+        </div>
+
+        <div class="form-actions" style="justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary" id="btn-submit">
+                <i class='ti ti-search'></i> Iniciar Pesquisa
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- SPINNER (LOADING) -->
+<div id="loading" style="display: none; text-align: center; margin: 3rem 0;">
+    <div style="display:inline-block;"><i class='ti ti-loader-2 ti-spin' style="font-size:2.5rem; color:var(--accent);"></i></div>
+    <p style="margin-top: 1rem; color: var(--text-muted); font-weight: 500;">A pesquisar nos repositórios e a comparar semanticamente...</p>
+</div>
+
+<!-- RESULTADOS -->
+<div id="area-resultados" style="display: none; margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class='ti ti-list-check'></i> Resultados da Pesquisa</span>
+            <div class="action-group" id="botoes-exportar" style="display: none;">
+                <a href="#" id="btn-exportar-csv" class="btn btn-sm btn-ghost"><i class='ti ti-download'></i> CSV</a>
+                <a href="#" id="btn-exportar-pdf" class="btn btn-sm btn-ghost"><i class='ti ti-file-text'></i> PDF</a>
+                <button type="button" class="btn btn-sm btn-primary" onclick="novaPesquisa()"><i class='ti ti-plus'></i> Nova</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="resultados-conteudo"></div>
+        </div>
+    </div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-history'></i> Histórico Recente</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Resultados</th>
+                        <th class="text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in historico %}
+                    <tr id="hist_{{ h.id }}">
+                        <td class="td-date">{{ h.criado_em }}</td>
+                        <td><span class="badge badge-neutral">{{ h.tipo_entrada|capitalize }}</span></td>
+                        <td><strong>{{ h.total_resultados }}</strong> suspeitos</td>
+                        <td class="text-right">
+                            <div class="action-group" style="justify-content:flex-end;">
+                                <a href="{{ url_for('pesquisa_individual.resultado', pesquisa_id=h.id) }}" class="btn btn-sm btn-ghost"><i class='ti ti-eye'></i> Ver</a>
+                                <button class="btn btn-sm btn-ghost" style="color: var(--danger);" onclick="apagarHistorico({{ h.id }})" title="Apagar"><i class='ti ti-trash'></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum histórico recente encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tabs logic
+    const tabBtns = document.querySelectorAll('[data-tab]');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const tipoEntradaInput = document.getElementById('tipo_entrada');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-ghost');
+            });
+            btn.classList.remove('btn-ghost');
+            btn.classList.add('btn-primary');
+            
+            tabContents.forEach(c => c.style.display = 'none');
+            const targetId = btn.getAttribute('data-tab');
+            document.getElementById(targetId).style.display = 'block';
+            
+            tipoEntradaInput.value = targetId.replace('tab-', '');
+        });
+    });
+
+    // Word counter
+    const textoInput = document.getElementById('texto');
+    const contador = document.getElementById('contador-texto');
+    textoInput.addEventListener('input', () => {
+        const words = textoInput.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+        contador.innerText = words;
+    });
+    
+    // Range Limiar
+    function atualizarLimiar(val) {
+        document.getElementById('limiar-display').innerText = val + '%';
+        document.getElementById('limiar-texto').innerText = val;
+    }
+    
+    // File upload visual
+    const fileInput = document.getElementById('ficheiro');
+    const fileName = document.getElementById('file-name');
+    function atualizarNomeFicheiro(input) {
+        if(input.files && input.files.length > 0) {
+            fileName.innerText = 'Ficheiro selecionado: ' + input.files[0].name;
+            fileName.style.color = 'var(--accent)';
+            fileName.style.fontWeight = '600';
+            document.getElementById('drop-area').style.borderColor = 'var(--accent)';
+        }
+    }
+    
+    // Drop area logic
+    const dropArea = document.getElementById('drop-area');
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false);
+    });
+    
+    dropArea.addEventListener('drop', (e) => {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        if(files.length > 0) {
+            fileInput.files = files;
+            atualizarNomeFicheiro(fileInput);
+        }
+    }, false);
+
+    function novaPesquisa() {
+        document.getElementById('area-resultados').style.display = 'none';
+        document.getElementById('resultados-conteudo').innerHTML = '';
+        document.getElementById('botoes-exportar').style.display = 'none';
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    async function executarPesquisa(e) {
+        e.preventDefault();
+        
+        const tipo = tipoEntradaInput.value;
+        const texto = document.getElementById('texto').value.trim();
+        const titulo = document.getElementById('titulo').value.trim();
+        const btnSubmit = document.getElementById('btn-submit');
+        
+        if(tipo === 'texto' && texto.length < 50) {
+            showAlert('Validação', 'O texto colado deve ter no mínimo 50 caracteres.', 'warning');
+            return;
+        }
+        if(tipo === 'titulo' && titulo.length < 5) {
+            showAlert('Validação', 'Introduza um título válido.', 'warning');
+            return;
+        }
+        if(tipo === 'ficheiro' && fileInput.files.length === 0) {
+            showAlert('Validação', 'Selecione um ficheiro.', 'warning');
+            return;
+        }
+
+        const formData = new FormData(document.getElementById('form-pesquisa'));
+        
+        document.getElementById('area-resultados').style.display = 'block';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultados-conteudo').innerHTML = '';
+        document.getElementById('botoes-exportar').style.display = 'none';
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = "<i class='ti ti-loader-2 ti-spin'></i> A processar...";
+        
+        try {
+            const response = await fetch("{{ url_for('pesquisa_individual.executar') }}", {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if(!response.ok) {
+                throw new Error(data.erro || "Ocorreu um erro na pesquisa");
+            }
+            
+            renderizarResultados(data);
+            
+            document.getElementById('btn-exportar-csv').href = "{{ url_for('pesquisa_individual.exportar', pesquisa_id=0, formato='csv') }}".replace('0', data.pesquisa_id);
+            document.getElementById('btn-exportar-pdf').href = "{{ url_for('pesquisa_individual.exportar', pesquisa_id=0, formato='pdf') }}".replace('0', data.pesquisa_id);
+            document.getElementById('botoes-exportar').style.display = 'flex';
+            
+            setTimeout(() => window.location.reload(), 3000);
+            
+        } catch (error) {
+            document.getElementById('resultados-conteudo').innerHTML = `
+                <div style="background: var(--danger-bg); color: var(--danger); padding: 1rem; border-radius: var(--radius); border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <i class='ti ti-alert-circle'></i> Erro: ${error.message}
+                </div>`;
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = "<i class='ti ti-search'></i> Iniciar Pesquisa";
+        }
+    }
+    
+    function renderizarResultados(data) {
+        const cont = document.getElementById('resultados-conteudo');
+        
+        let html = `
+            <div style="background: var(--info-bg); color: var(--info); padding: 1rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid rgba(14, 165, 233, 0.2);">
+                <strong>Resumo:</strong> Foram encontrados ${data.total_suspeitos} resultados suspeitos.
+            </div>
+        `;
+        
+        if (data.frases_pesquisadas && data.frases_pesquisadas.length > 0) {
+            html += `<div style="margin-bottom: 1.5rem;"><strong style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Frases pesquisadas:</strong>`;
+            html += `<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">`;
+            data.frases_pesquisadas.forEach(f => {
+                html += `<span style="background: var(--border-light); border: 1px solid var(--border); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; color: var(--text-muted);">${f}</span>`;
+            });
+            html += `</div></div>`;
+        }
+        
+        if (data.suspeitos.length === 0) {
+            html += `<div style="text-align: center; padding: 3rem 0; color: var(--success);">
+                <i class='ti ti-shield-check' style="font-size: 4rem; margin-bottom: 1rem;"></i><br>
+                <h3 style="font-size: 1.2rem;">Nenhum resultado suspeito acima do limiar.</h3>
+            </div>`;
+            cont.innerHTML = html;
+            return;
+        }
+        
+        html += `<div class="table-responsive"><table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Título e Autores</th>
+                    <th>Fonte</th>
+                    <th>Ano</th>
+                    <th>Semelhança</th>
+                    <th class="text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody>`;
+            
+        data.suspeitos.forEach((s, idx) => {
+            const scorePct = Math.round(s.score_semantico * 100);
+            let badgeClass = 'badge-baixo';
+            if (scorePct >= 85) badgeClass = 'badge-critico';
+            else if (scorePct >= 70) badgeClass = 'badge-moderado';
+            
+            const autores = s.autores && s.autores.length > 0 ? s.autores.join(', ') : 'Desconhecido';
+            
+            html += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">${s.titulo}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">${autores}</div>
+                    </td>
+                    <td><span class="badge badge-neutral">${s.fonte.toUpperCase()}</span></td>
+                    <td>${s.ano || 'N/A'}</td>
+                    <td><span class="badge ${badgeClass}" style="font-size: 0.9rem;">${scorePct}%</span></td>
+                    <td class="text-right">
+                        <button type="button" class="btn btn-sm btn-ghost" onclick="toggleResumo(${idx})">Resumo ▼</button>
+                        ${s.url ? `<a href="${s.url}" target="_blank" class="btn btn-sm btn-ghost" style="color: var(--accent);">Abrir ↗</a>` : ''}
+                    </td>
+                </tr>
+                <tr id="resumo-${idx}" style="display: none; background-color: var(--bg);">
+                    <td colspan="6" style="padding: 1.5rem;">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Resumo / Abstract</div>
+                        <div style="font-size: 0.9rem; color: var(--text); line-height: 1.6; margin-bottom: 1rem;">${s.resumo || 'Resumo não disponível.'}</div>
+                        ${s.frase_origem ? `<div style="font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">Frase do documento original:</div><div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; background: var(--white); padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius);">"${s.frase_origem}"</div>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `</tbody></table></div>`;
+        cont.innerHTML = html;
+    }
+    
+    function toggleResumo(idx) {
+        const el = document.getElementById(`resumo-${idx}`);
+        if(el.style.display === 'none') {
+            el.style.display = 'table-row';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+    
+    async function apagarHistorico(id) {
+        openModal(
+            'Confirmar',
+            'Tem a certeza que deseja apagar este histórico?',
+            'Apagar',
+            'btn-danger',
+            async function() {
+                try {
+                    const response = await fetch(`{{ url_for('pesquisa_individual.index') }}historico/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if(data.sucesso) {
+                        document.getElementById('hist_' + id).remove();
+                    } else {
+                        showAlert('Erro', 'Erro ao apagar: ' + data.erro, 'error');
+                    }
+                } catch(e) {
+                    showAlert('Erro', 'Erro na ligação.', 'error');
+                }
+            }
+        );
+    }
+</script>
+{% endblock %}

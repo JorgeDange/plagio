@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import campo, campo_select, flash_messages, botao %}
+
+{% block title %}{{ 'Editar' if orientador else 'Novo' }} Orientador — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti {% if orientador %}ti-edit{% else %}ti-plus{% endif %}'></i> {{ 'Editar' if orientador else 'Novo' }} Orientador</h2>
+        <p>{{ 'Actualizar os dados de ' ~ orientador.nome if orientador else 'Registar um novo orientador' }}</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" class="form-async">
+        {{ campo('nome', 'Nome completo', obrigatorio=True, valor=orientador.nome if orientador else '') }}
+        
+        <div class="form-row">
+            {{ campo('email', 'Email', tipo='email', valor=orientador.email if orientador else '') }}
+            
+            {% set opcoes_tit = [
+                {'valor': 'Dr.', 'texto': 'Dr.'},
+                {'valor': 'Mestre', 'texto': 'Mestre'},
+                {'valor': 'Prof.', 'texto': 'Prof.'},
+                {'valor': 'Lic.', 'texto': 'Lic.'}
+            ] %}
+            {{ campo_select('titulacao', 'Titulação', opcoes=opcoes_tit, valor=orientador.titulacao if orientador else '') }}
+        </div>
+
+        {% set opcoes_curso = [] %}
+        {% for c in cursos %}
+            {% set _ = opcoes_curso.append({'valor': c.id, 'texto': c.nome}) %}
+        {% endfor %}
+        {{ campo_select('curso_id', 'Curso', opcoes=opcoes_curso, valor=orientador.curso_id if orientador else '') }}
+
+        <div class="form-footer">
+            {{ botao('Guardar', icon='ti-save') }}
+            {{ botao('Cancelar', tipo='button', estilo='ghost', href=url_for('orientadores.lista')) }}
+        </div>
+    </form>
+</div>
+{% endblock %}

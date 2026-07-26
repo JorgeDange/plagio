@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}A Verificar... — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-zoom-check' style='color:var(--info);margin-right:8px;'></i> Verificação de Plágio em Curso</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">{{ tcc_titulo }}</p>
+    </div>
+</div>
+<div class="card" style="max-width:800px; margin: 2rem auto;"><div class="card-body" style="padding: 2rem;">
+    <div style="text-align:center;margin-bottom:1.5rem;">
+        <div class="spinner" style="width:40px;height:40px;border: 3px solid var(--border-light);border-top-color: var(--accent);border-radius: 50%;animation: spin 1s linear infinite;margin:0 auto 1rem;"></div>
+        <p id="etapaTexto" style="font-weight:600;font-size:0.95rem;color:var(--text);">A preparar a verificação...</p>
+        <p id="pctTexto" style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;">0%</p>
+    </div>
+    <div class="progress-bar-main" style="height:8px; background:var(--border-light); border-radius:4px; overflow:hidden; margin-bottom: 2rem;"><div class="progress-bar-fill" id="progressBar" style="width:0%; height:100%; background:var(--accent); transition: width 0.3s ease;"></div></div>
+    <div class="prog-track" id="progTrack">
+        <div class="prog-node pending" id="pnode-extraindo">
+            <div class="prog-circle">
+                <i class='ti ti-file'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Ler<br>documento</div>
+        </div>
+        <div class="prog-connector" id="pconn-extraindo"></div>
+
+        <div class="prog-node pending" id="pnode-chunking">
+            <div class="prog-circle">
+                <i class='ti ti-scissors'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Dividir<br>em partes</div>
+        </div>
+        <div class="prog-connector" id="pconn-chunking"></div>
+
+        <div class="prog-node pending" id="pnode-pesquisa_externa">
+            <div class="prog-circle">
+                <i class='ti ti-world'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Pesquisa<br>na Internet</div>
+        </div>
+        <div class="prog-connector" id="pconn-pesquisa_externa"></div>
+
+        <div class="prog-node pending" id="pnode-embeddings">
+            <div class="prog-circle">
+                <i class='ti ti-calculator'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Preparar<br>análise</div>
+        </div>
+        <div class="prog-connector" id="pconn-embeddings"></div>
+
+        <div class="prog-node pending" id="pnode-comparando">
+            <div class="prog-circle">
+                <i class='ti ti-zoom-check'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Comparar<br>trabalhos</div>
+        </div>
+        <div class="prog-connector" id="pconn-comparando"></div>
+
+        <div class="prog-node pending" id="pnode-abnt">
+            <div class="prog-circle">
+                <i class='ti ti-ruler'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Normas<br>ABNT/APA</div>
+        </div>
+        <div class="prog-connector" id="pconn-abnt"></div>
+
+        <div class="prog-node pending" id="pnode-analise_ia">
+            <div class="prog-circle">
+                <i class='ti ti-robot'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Análise<br>Inteligente</div>
+        </div>
+        <div class="prog-connector" id="pconn-analise_ia"></div>
+
+        <div class="prog-node pending" id="pnode-relatorio">
+            <div class="prog-circle">
+                <i class='ti ti-trending-up'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Gerar<br>relatório</div>
+        </div>
+        <div class="prog-connector" id="pconn-relatorio"></div>
+
+        <div class="prog-node pending" id="pnode-concluido">
+            <div class="prog-circle">
+                <i class='ti ti-circle-check'></i>
+                <div class="prog-badge"><i class='ti ti-check'></i></div>
+            </div>
+            <div class="prog-label">Concluído</div>
+        </div>
+    </div>
+    <div id="erroDiv" style="display:none;" class="flash flash-erro" style="margin-top:1rem;"></div>
+</div></div>
+{% endblock %}
+{% block scripts %}
+<style>
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.prog-track {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-x: auto;
+    padding: 0.5rem 0 1rem;
+    gap: 0;
+}
+.prog-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 68px;
+}
+.prog-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+    font-size: 1.4rem;
+}
+.prog-circle .prog-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+    font-size: 0.6rem;
+    color: white;
+}
+.prog-connector {
+    flex: 1;
+    height: 2px;
+    margin-top: 27px;
+    min-width: 16px;
+    border-top: 2.5px dashed var(--border);
+    transition: border-color 0.4s, border-style 0.4s;
+}
+.prog-label {
+    font-size: 11px;
+    text-align: center;
+    max-width: 68px;
+    line-height: 1.3;
+    color: var(--text-muted);
+    transition: color 0.3s;
+    font-weight: 400;
+}
+.prog-node.done .prog-circle {
+    border-color: var(--success);
+    background: var(--success-bg);
+    color: var(--success);
+}
+.prog-node.done .prog-badge {
+    opacity: 1;
+    transform: scale(1);
+}
+.prog-node.done .prog-label {
+    color: var(--success);
+    font-weight: 500;
+}
+.prog-connector.conn-done {
+    border-color: var(--success);
+    border-style: solid;
+}
+@keyframes pulse-ring {
+    0%,100% { box-shadow: 0 0 0 4px rgba(0,43,92,0.15); }
+    50%      { box-shadow: 0 0 0 6px rgba(0,43,92,0.28); }
+}
+@keyframes dash-flow {
+    from { margin-left: 0; }
+    to   { margin-left: -24px; }
+}
+.prog-node.active .prog-circle {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+    color: var(--accent);
+    transform: scale(1.08);
+    animation: pulse-ring 1.5s ease-in-out infinite;
+}
+.prog-node.active .prog-label {
+    color: var(--accent);
+    font-weight: 500;
+}
+.prog-connector.conn-active {
+    border-color: var(--accent);
+    border-style: dashed;
+}
+@media (max-width: 600px) {
+    .prog-node { min-width: 44px; }
+    .prog-circle { width: 44px; height: 44px; font-size: 1.1rem; }
+    .prog-circle .prog-badge { width: 14px; height: 14px; font-size: 0.5rem; }
+    .prog-label { font-size: 10px; max-width: 44px; }
+    .prog-connector { margin-top: 21px; }
+}
+</style>
+<script>
+(function(){
+    const jobId='{{ job_id }}';
+    const bar=document.getElementById('progressBar');
+    const etapa=document.getElementById('etapaTexto');
+    const pctT=document.getElementById('pctTexto');
+    const erroDiv=document.getElementById('erroDiv');
+    const nomes={
+        'extraindo':'A ler o documento...',
+        'chunking':'A dividir o documento em partes...',
+        'pesquisa_externa':'A pesquisar em repositórios na internet...',
+        'embeddings':'A preparar o motor de análise...',
+        'comparando':'A comparar com outros trabalhos...',
+        'abnt':'A verificar normas de escrita (ABNT/APA)...',
+        'analise_ia':'A realizar análise inteligente...',
+        'relatorio':'A gerar o relatório final...',
+        'concluido':'Verificação concluída com sucesso!'
+    };
+
+    const etapasOrdem = [
+        'extraindo','chunking','pesquisa_externa','embeddings','comparando','abnt','analise_ia','relatorio','concluido'
+    ];
+
+    function updateSteps(currentEtapa) {
+        const idx = etapasOrdem.indexOf(currentEtapa);
+        etapasOrdem.forEach((etapa, i) => {
+            const node = document.getElementById('pnode-' + etapa);
+            if (!node) return;
+            node.classList.remove('done', 'active', 'pending');
+            if (i < idx) {
+                node.classList.add('done');
+            } else if (i === idx) {
+                node.classList.add('active');
+            } else {
+                node.classList.add('pending');
+            }
+            if (i < etapasOrdem.length - 1) {
+                const conn = document.getElementById('pconn-' + etapa);
+                if (!conn) return;
+                conn.classList.remove('conn-done', 'conn-active');
+                if (i < idx)       conn.classList.add('conn-done');
+                else if (i === idx) conn.classList.add('conn-active');
+            }
+        });
+    }
+
+    updateSteps('extraindo');
+
+    const timer=setInterval(()=>{
+        fetch('/api/progresso/'+jobId).then(r=>r.json()).then(d=>{
+            if(d.status==='nao_encontrado')return;
+            const pct=Math.min(d.progresso||0,100);
+            bar.style.width=pct+'%';
+            pctT.textContent=pct+'%';
+            if(d.etapa){etapa.textContent=nomes[d.etapa]||d.etapa;updateSteps(d.etapa);}
+            if(d.status==='concluido'){
+                clearInterval(timer);bar.style.width='100%';pctT.textContent='100%';
+                etapa.innerHTML=`<i class='ti ti-circle-check' style='color:var(--success);margin-right:6px;'></i> Verificação concluída com sucesso!`;updateSteps('concluido');
+                document.querySelector('.spinner').style.display='none';
+                if(d.verificacao_id){setTimeout(()=>window.location.href='/verificacoes/'+d.verificacao_id+'/resultado',1500);}
+            }else if(d.status==='erro'){
+                clearInterval(timer);document.querySelector('.spinner').style.display='none';
+                etapa.innerHTML=`<i class='ti ti-circle-x' style='color:var(--danger);margin-right:6px;'></i> Ocorreu um erro na verificação`;
+                erroDiv.style.display='flex';erroDiv.textContent='Erro: '+(d.erro||'desconhecido');
+            }
+        }).catch(()=>{});
+    },1200);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import campo, campo_select, campo_upload, flash_messages, botao %}
+
+{% block title %}Enviar Trabalho para Verificação — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2><i class='ti ti-upload' style="color:var(--accent);margin-right:8px;"></i> Enviar Trabalho para Verificação</h2>
+        <p>Submeta um ou mais ficheiros para iniciar a análise de plágio.</p>
+    </div>
+
+    {{ flash_messages() }}
+
+    <form method="POST" enctype="multipart/form-data" class="form-async">
+        <div class="form-section-title">Documento(s) a Verificar</div>
+        
+        {{ campo_upload('ficheiros', 'Ficheiro(s)', tipos='.pdf,.docx,.txt', ajuda='PDF, DOCX ou TXT — Múltiplos aceites', multiplo=True) }}
+
+        <hr class="form-divider">
+        <div class="form-section-title">Metadados</div>
+
+        <div class="form-row">
+            {{ campo('titulo', 'Título', ajuda='Opcional — será extraído do ficheiro se vazio', placeholder='Deixar em branco = nome do ficheiro') }}
+            {{ campo('autor', 'Autor', obrigatorio=True) }}
+        </div>
+
+        <div class="form-row">
+            {% set opcoes_orientador = [] %}
+            {% for o in orientadores %}
+                {% set _ = opcoes_orientador.append({'valor': o.id, 'texto': o.titulacao ~ ' ' ~ o.nome}) %}
+            {% endfor %}
+            {{ campo_select('orientador_id', 'Orientador', opcoes=opcoes_orientador) }}
+
+            {% set opcoes_curso = [] %}
+            {% for c in cursos %}
+                {% set _ = opcoes_curso.append({'valor': c.id, 'texto': c.nome}) %}
+            {% endfor %}
+            {{ campo_select('curso_id', 'Curso', opcoes=opcoes_curso, obrigatorio=True) }}
+        </div>
+
+        <div class="form-group" style="max-width:200px">
+            <label>Ano</label>
+            <input type="number" name="ano" class="form-control" min="2000" max="2030">
+        </div>
+
+        <div class="form-footer">
+            {{ botao('Enviar para Fila de Verificação', icon='ti-upload', estilo='primary') }}
+            {{ botao('Cancelar', tipo='button', estilo='ghost', href=url_for('tcc_suspeitos.lista')) }}
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Utilizadores — IMETRO TFC{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-users' style="margin-right:8px; color:var(--accent)"></i> Gestão de Utilizadores</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">{{ utilizadores|length }} utilizador(es) registado(s)</p>
+    </div>
+    <a href="{{ url_for('utilizadores.novo') }}" class="btn btn-primary" id="btn-novo-utilizador">
+        <i class='ti ti-user-plus'></i> Novo Utilizador
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-container-header">
+        <span class="table-container-title">Lista de Utilizadores</span>
+        <div class="table-container-actions">
+            <div class="table-search-input">
+                <i class="ti ti-search"></i>
+                <input type="text" placeholder="Pesquisar utilizador..." id="pesquisaUtilizador">
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table" id="tabelaUtilizadores">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Papel</th>
+                    <th>Estado</th>
+                    <th>Último Login</th>
+                    <th>Criado em</th>
+                    <th class="text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in utilizadores %}
+                <tr>
+                    <td class="td-title">{{ u['nome'] }}</td>
+                    <td>{{ u['email'] }}</td>
+                    <td>
+                        <span class="badge badge-papel-{{ u['papel'] }}">{{ u['papel']|capitalize }}</span>
+                    </td>
+                    <td>
+                        {% if u['ativo'] == 1 %}
+                        <span class="badge badge-verificado">Activo</span>
+                        {% else %}
+                        <span class="badge badge-alto">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td class="td-date">{{ u['ultimo_login'] or '—' }}</td>
+                    <td class="td-date">{{ u['criado_em'] or '—' }}</td>
+                    <td>
+                        <div class="action-group">
+                            <a href="{{ url_for('utilizadores.editar', id=u['id']) }}" class="btn btn-ghost btn-sm" title="Editar">
+                                <i class='ti ti-edit'></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('utilizadores.toggle', id=u['id']) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm {% if u['ativo'] == 1 %}btn-warning{% else %}btn-success{% endif %}" title="{% if u['ativo'] == 1 %}Desactivar{% else %}Activar{% endif %}">
+                                    <i class='ti {% if u["ativo"] == 1 %}ti-ban{% else %}ti-check{% endif %}'></i>
+                                </button>
+                            </form>
+                            <!-- Reset password modal trigger -->
+                            <button type="button" class="btn btn-ghost btn-sm" title="Redefinir Palavra-passe" onclick="resetPassword({{ u['id'] }}, '{{ u['nome'] }}')">
+                                <i class='ti ti-key'></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not utilizadores %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        Nenhum utilizador encontrado.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de reset de password -->
+<div id="resetModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class='ti ti-key' style="margin-right:0.5rem;"></i> Redefinir Palavra-passe</h3>
+            <button class="modal-close" onclick="fecharReset()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="resetUserName" style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;"></p>
+            <form id="resetForm" method="POST" action="">
+                <div class="form-group">
+                    <label class="form-label" for="nova_password">Nova Palavra-passe</label>
+                    <input type="password" class="form-control" id="nova_password" name="nova_password" required minlength="8" placeholder="Mínimo 8 caracteres">
+                </div>
+                <div class="modal-footer" style="border-top:none; padding:0; margin-top:1rem;">
+                    <button type="button" class="btn btn-ghost" onclick="fecharReset()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class='ti ti-check'></i> Redefinir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function resetPassword(id, nome) {
+    const modal = document.getElementById('resetModal');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+    document.getElementById('resetUserName').textContent = 'Utilizador: ' + nome;
+    document.getElementById('resetForm').action = '/utilizadores/' + id + '/reset';
+    document.getElementById('nova_password').value = '';
+    document.getElementById('nova_password').focus();
+}
+function fecharReset() {
+    const modal = document.getElementById('resetModal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.style.display = 'none', 200);
+}
+document.getElementById('resetModal').addEventListener('click', function(e) {
+    if (e.target === this) fecharReset();
+});
+
+// Search filter
+const pesquisaInput = document.getElementById('pesquisaUtilizador');
+if (pesquisaInput) {
+    pesquisaInput.addEventListener('input', function() {
+        const termo = this.value.toLowerCase();
+        document.querySelectorAll('#tabelaUtilizadores tbody tr').forEach(tr => {
+            const texto = tr.textContent.toLowerCase();
+            tr.style.display = texto.includes(termo) ? '' : 'none';
+        });
+    });
+}
+</script>
+{% endblock %}

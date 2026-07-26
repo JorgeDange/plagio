@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Resultados Anteriores — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class='ti ti-file-analytics' style="margin-right:8px; color:var(--accent)"></i> Resultados Anteriores</h1>
+        <p class="page-subtitle" style="margin-top: 4px; color: var(--text-muted); font-size: 13px;">{{ total }} resultado(s) registado(s)</p>
+    </div>
+    <a href="{{ url_for('verificacoes.nova') }}" class="btn btn-primary"><i class='ti ti-zoom-check' style="margin-right:6px;"></i> Iniciar Verificação</a>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Baixo</span>
+            <i class="ti ti-circle-check kpi-icon-outline" style="color: var(--success);"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats_nivel.Baixo }}</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Moderado</span>
+            <i class="ti ti-alert-triangle kpi-icon-outline" style="color: var(--warning);"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats_nivel.Moderado }}</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Alto</span>
+            <i class="ti ti-alert-octagon kpi-icon-outline" style="color: var(--danger);"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats_nivel.Alto }}</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-row-top">
+            <span class="kpi-label">Crítico</span>
+            <i class="ti ti-ban kpi-icon-outline" style="color: var(--danger);"></i>
+        </div>
+        <div class="kpi-row-middle">
+            <span class="kpi-value">{{ stats_nivel.Critico }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="table-container-header" style="padding: 1.25rem; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <form method="GET" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;flex:1;">
+            <select name="curso_id" class="form-select" onchange="this.form.submit()" style="min-width: 180px;">
+                <option value="">Todos os Cursos</option>
+                {% for c in cursos %}
+                <option value="{{ c.id }}" {% if filtro_curso == c.id %}selected{% endif %}>{{ c.nome }}</option>
+                {% endfor %}
+            </select>
+            <select name="nivel" class="form-select" onchange="this.form.submit()" style="min-width: 150px;">
+                <option value="">Todos os Níveis</option>
+                {% for n in ['Baixo','Moderado','Alto','Critico'] %}
+                <option value="{{ n }}" {% if filtro_nivel == n %}selected{% endif %}>{{ n }}</option>
+                {% endfor %}
+            </select>
+            <div style="display:inline-flex; align-items:center; gap:0.5rem; font-size:12px; color:var(--text-muted);">
+                <span>Desde:</span>
+                <input type="date" name="data_de" class="form-input" value="{{ filtro_data_de }}" style="width:auto;">
+                <span>Até:</span>
+                <input type="date" name="data_ate" class="form-input" value="{{ filtro_data_ate }}" style="width:auto;">
+            </div>
+            <button type="submit" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Filtrar</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Trabalho</th>
+                    <th>Autor</th>
+                    <th>Curso</th>
+                    <th>% Semelhança</th>
+                    <th>Nível</th>
+                    <th>ABNT</th>
+                    <th>APA</th>
+                    <th>Normas</th>
+                    <th>Duração</th>
+                    <th>Data</th>
+                    <th class="text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in verificacoes %}
+                <tr>
+                    <td class="td-title" style="font-weight: 500;">
+                        <a href="{{ url_for('verificacoes.resultado', id=v.id) }}" class="link-title" style="color: var(--accent); text-decoration: none;">
+                            {{ v.tcc_titulo or '—' }}
+                        </a>
+                    </td>
+                    <td>{{ v.tcc_autor or '—' }}</td>
+                    <td>{{ v.curso_nome_filtro or 'Todos' }}</td>
+                    <td>
+                        <div class="pct-bar-container">
+                            <div class="pct-bar-track">
+                                <div class="pct-bar-fill pct-bar-fill-{{ v.nivel|lower }}" style="width:{{ v.percentagem_plagio }}%"></div>
+                            </div>
+                            <span class="pct-bar-label">{{ v.percentagem_plagio }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% set level_badge = {
+                            'alto': 'badge-reprovado',
+                            'critico': 'badge-reprovado',
+                            'moderado': 'badge-suspeito',
+                            'baixo': 'badge-aprovado'
+                        }[v.nivel|lower] | default('badge-neutral') %}
+                        <span class="badge {{ level_badge }}">{{ v.nivel }}</span>
+                    </td>
+                    <td style="font-weight: 600;">{{ v.score_abnt|round(0)|int }}%</td>
+                    <td style="font-weight: 600;">{{ (v.score_apa or 0)|round(0)|int }}%</td>
+                    <td>
+                        {% if v.normas_classificacao %}
+                            {% if v.normas_classificacao == 'CONFORME' %}
+                                <span class="badge badge-aprovado" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Ok</span>
+                            {% elif v.normas_classificacao == 'COM_RESSALVAS' %}
+                                <span class="badge badge-suspeito" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Ressalvas</span>
+                            {% else %}
+                                <span class="badge badge-reprovado" style="font-size:0.7rem;padding:0.2rem 0.4rem;">Inconforme</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color:var(--text-muted);font-size:0.8rem;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ v.duracao_segundos }}s</td>
+                    <td class="td-date">{{ v.data }}</td>
+                    <td class="text-right">
+                        <a href="{{ url_for('verificacoes.resultado', id=v.id) }}" class="btn btn-sm btn-ghost" title="Ver Detalhes">
+                            <i class='ti ti-eye' style="margin-right:4px;"></i> Ver
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not verificacoes %}
+                <tr>
+                    <td colspan="11" style="text-align:center;padding:3rem;color:var(--text-muted)">Nenhum resultado disponível.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if total_paginas > 1 %}
+<div class="pagination" style="margin-top: 1.5rem; justify-content: center; display: flex; gap: 0.25rem;">
+    {% for p in range(1,total_paginas+1) %}
+    <a href="?pagina={{ p }}&curso_id={{ filtro_curso or '' }}&nivel={{ filtro_nivel }}&data_de={{ filtro_data_de }}&data_ate={{ filtro_data_ate }}" class="{% if p == pagina %}active{% endif %}" style="text-decoration:none; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm);">{{ p }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ tcc.titulo }} — IMETRO TFC{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('tcc_validos.lista') }}" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+            <i class="ti ti-arrow-left"></i> Trabalhos Aprovados
+        </a>
+        <h1 class="page-title" style="margin-top:0.5rem;">
+            <i class='ti ti-book-bookmark' style='color:var(--success);margin-right:8px;'></i> {{ tcc.titulo }}
+        </h1>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;align-items:start;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Metadados</span>
+        </div>
+        <div class="card-body" style="padding:1.25rem;">
+            <div class="detail-list" style="display:flex;flex-direction:column;gap:0.75rem;">
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Autor</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.autor }}</span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Orientador</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.orientador_nome or '—' }}</span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Curso</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.curso_nome or '—' }}</span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Ano / Semestre</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.ano_defesa or '—' }} {{ tcc.semestre }}</span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Nota Final</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.nota_final or '—' }}</span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Palavras-chave</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.palavras_chave or '—' }}</span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-light);padding-bottom:0.5rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Trechos do Trabalho</span>
+                    <span class="detail-value"><span class="badge badge-neutral">{{ tcc.num_chunks }}</span></span>
+                </div>
+                <div class="detail-row" style="display:flex;justify-content:space-between;padding-bottom:0.25rem;font-size:13px;">
+                    <span class="detail-label" style="color:var(--text-muted);font-weight:500;">Data de Registo</span>
+                    <span class="detail-value" style="color:var(--text);font-weight:600;">{{ tcc.data_indexacao }}</span>
+                </div>
+            </div>
+            {% if tcc.resumo %}
+            <div style="margin-top:1.25rem;padding:1rem;background:var(--bg);border:1px solid rgba(0, 43, 92, 0.1);border-radius:var(--radius);font-size:0.85rem;line-height:1.6;color:var(--text);">
+                <strong style="display:block;margin-bottom:0.5rem;color:var(--accent);font-size:13px;">Resumo:</strong>
+                {{ tcc.resumo }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div>
+        <!-- ABNT -->
+        <div class="card" style="margin-bottom:1rem;">
+            <div class="card-header">
+                <span class="card-title"><i class='ti ti-ruler' style="margin-right:6px;color:var(--accent)"></i> Conformidade ABNT</span>
+            </div>
+            <div class="card-body" style="padding:1.25rem;">
+                <div style="text-align:center;margin-bottom:1rem;">
+                    <div class="stat-value" style="font-size:2rem;font-weight:700;color:var(--accent);line-height:1.2;">{{ tcc.score_abnt|round(0)|int }}%</div>
+                    <span class="badge {% if tcc.score_abnt >= 80 %}badge-aprovado{% elif tcc.score_abnt >= 50 %}badge-suspeito{% else %}badge-reprovado{% endif %}" style="margin-top:0.25rem;display:inline-block;">
+                        {% if tcc.score_abnt >= 80 %}Conforme{% elif tcc.score_abnt >= 50 %}Parcial{% else %}Não Conforme{% endif %}
+                    </span>
+                </div>
+                <div class="abnt-checklist" style="display:flex;flex-direction:column;gap:0.5rem;font-size:13px;">
+                    <div class="abnt-item" style="display:flex;align-items:center;gap:0.5rem;color:{% if tcc.tem_capa %}var(--success){% else %}var(--danger){% endif %};">
+                        {% if tcc.tem_capa %}<i class='ti ti-circle-check'></i>{% else %}<i class='ti ti-circle-x'></i>{% endif %} Capa
+                    </div>
+                    <div class="abnt-item" style="display:flex;align-items:center;gap:0.5rem;color:{% if tcc.tem_folha_rosto %}var(--success){% else %}var(--danger){% endif %};">
+                        {% if tcc.tem_folha_rosto %}<i class='ti ti-circle-check'></i>{% else %}<i class='ti ti-circle-x'></i>{% endif %} Folha de Rosto
+                    </div>
+                    <div class="abnt-item" style="display:flex;align-items:center;gap:0.5rem;color:{% if tcc.tem_resumo %}var(--success){% else %}var(--danger){% endif %};">
+                        {% if tcc.tem_resumo %}<i class='ti ti-circle-check'></i>{% else %}<i class='ti ti-circle-x'></i>{% endif %} Resumo
+                    </div>
+                    <div class="abnt-item" style="display:flex;align-items:center;gap:0.5rem;color:{% if tcc.tem_abstract %}var(--success){% else %}var(--danger){% endif %};">
+                        {% if tcc.tem_abstract %}<i class='ti ti-circle-check'></i>{% else %}<i class='ti ti-circle-x'></i>{% endif %} Abstract
+                    </div>
+                    <div class="abnt-item" style="display:flex;align-items:center;gap:0.5rem;color:{% if tcc.tem_sumario %}var(--success){% else %}var(--danger){% endif %};">
+                        {% if tcc.tem_sumario %}<i class='ti ti-circle-check'></i>{% else %}<i class='ti ti-circle-x'></i>{% endif %} Sumário
+                    </div>
+                    <div class="abnt-item" style="display:flex;align-items:center;gap:0.5rem;color:{% if tcc.tem_referencias %}var(--success){% else %}var(--danger){% endif %};">
+                        {% if tcc.tem_referencias %}<i class='ti ti-circle-check'></i>{% else %}<i class='ti ti-circle-x'></i>{% endif %} Referências
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- APA -->
+        <div class="card" style="margin-bottom:1rem;">
+            <div class="card-header">
+                <span class="card-title"><i class='ti ti-book' style="margin-right:6px;color:var(--accent)"></i> Conformidade APA</span>
+            </div>
+            <div class="card-body" style="padding:1.25rem;">
+                <div style="text-align:center;margin-bottom:0.75rem;">
+                    <div class="stat-value" style="font-size:2rem;font-weight:700;color:var(--accent);line-height:1.2;">{{ (tcc.score_apa or tcc.score_abnt)|round(0)|int }}%</div>
+                    <span class="badge {% if (tcc.score_apa or tcc.score_abnt) >= 80 %}badge-aprovado{% elif (tcc.score_apa or tcc.score_abnt) >= 50 %}badge-suspeito{% else %}badge-reprovado{% endif %}" style="margin-top:0.25rem;display:inline-block;">
+                        {% if (tcc.score_apa or tcc.score_abnt) >= 80 %}Conforme{% elif (tcc.score_apa or tcc.score_abnt) >= 50 %}Parcial{% else %}Não Conforme{% endif %}
+                    </span>
+                </div>
+                <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:0.5rem;margin-bottom:0;">APA 7ª Edição — Avaliação estrutural</p>
+            </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+            <a href="{{ url_for('tcc_validos.download', id=tcc.id) }}" class="btn btn-ghost btn-full" style="justify-content:center;"><i class='ti ti-download' style="margin-right:6px;"></i> Descarregar Ficheiro</a>
+            <form method="POST" action="{{ url_for('tcc_validos.remover', id=tcc.id) }}" style="width:100%;">
+                <button type="submit" class="btn btn-danger btn-full" style="justify-content:center;width:100%;" data-modal-confirm data-modal-message="Remover este trabalho da base?" data-modal-title="Confirmar Remoção" data-modal-type="btn-danger"><i class='ti ti-trash' style="margin-right:6px;"></i> Remover</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if matches_origem %}
+<div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+        <span class="card-title"><i class='ti ti-search' style='color:var(--info);margin-right:6px;'></i> Detectado como Origem em {{ matches_origem|length }} Verificação(ões)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Trabalho Analisado</th>
+                    <th>Autor</th>
+                    <th>Data</th>
+                    <th>Contribuição</th>
+                    <th class="text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in matches_origem %}
+                <tr>
+                    <td style="font-weight: 500; color: var(--text);">{{ m.susp_titulo or '—' }}</td>
+                    <td>{{ m.susp_autor or '—' }}</td>
+                    <td class="td-date">{{ m.data }}</td>
+                    <td><span class="badge badge-neutral">{{ m.contribuicao_pct|default(0) }}%</span></td>
+                    <td class="text-right">
+                        <a href="{{ url_for('verificacoes.resultado', id=m.verificacao_id) }}" class="btn btn-sm btn-ghost" title="Ver Detalhes">
+                            <i class='ti ti-eye' style="margin-right:4px;"></i> Ver
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -37,8 +37,7 @@ uploads/
 
 # ── Relatórios Gerados ──────────────────────────────────────
 relatorios/
-*.html
-!templates/*.html
+relatorios/*.html
 
 # ── Modelos de IA (pesados) ─────────────────────────────────
 app/models/
