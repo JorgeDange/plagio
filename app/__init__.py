@@ -125,6 +125,12 @@ def create_app() -> Flask:
 
 
 def _load_llm_config(app: Flask) -> None:
+    env_keys = ["LLM_ENABLED", "LLM_PROVIDER", "LLM_MODEL", "LLM_API_KEY", "OLLAMA_URL"]
+    for key in env_keys:
+        val = os.environ.get(key)
+        if val is not None:
+            app.config[key] = val
+
     try:
         with app.app_context():
             from app.database.db import get_db
@@ -132,10 +138,8 @@ def _load_llm_config(app: Flask) -> None:
             cur = db.cursor()
             cur.execute("SELECT chave, valor FROM configuracoes WHERE chave LIKE 'LLM_%%' OR chave = 'OLLAMA_URL'")
             for r in cur.fetchall():
-                app.config[r[0]] = r[1]
-            cur.execute("SELECT COUNT(*) FROM configuracoes WHERE chave LIKE 'LLM_%%' OR chave = 'OLLAMA_URL'")
-            count = cur.fetchone()[0]
-            if count:
-                print(f'[Flask] Configuracoes IA carregadas: {count} chave(s)')
+                if r[0] not in app.config or r[0] not in env_keys:
+                    app.config[r[0]] = r[1]
+            cur.close()
     except Exception as e:
         print(f'[Flask] Aviso ao carregar config IA: {e}')

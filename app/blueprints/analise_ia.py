@@ -50,6 +50,8 @@ def _get_db():
 
 
 def _get_config_from_db() -> dict:
+    import os
+    config = {}
     db = _get_db()
     cur = db.cursor()
     cur.execute(
@@ -58,7 +60,23 @@ def _get_config_from_db() -> dict:
     cols = [d[0] for d in cur.description]
     rows = [dict(zip(cols, row)) for row in cur.fetchall()]
     cur.close()
-    return {r["chave"]: r["valor"] for r in rows}
+    config = {r["chave"]: r["valor"] for r in rows}
+
+    env_map = {
+        "LLM_ENABLED": "LLM_ENABLED",
+        "LLM_PROVIDER": "LLM_PROVIDER",
+        "LLM_MODEL": "LLM_MODEL",
+        "LLM_API_KEY": "LLM_API_KEY",
+        "LLM_SCORE_THRESHOLD": "LLM_SCORE_THRESHOLD",
+        "LLM_MAX_CHUNKS": "LLM_MAX_CHUNKS",
+        "OLLAMA_URL": "OLLAMA_URL",
+    }
+    for env_key, cfg_key in env_map.items():
+        val = os.environ.get(env_key)
+        if val is not None:
+            config[cfg_key] = val
+
+    return config
 
 
 def _salvar_config_no_db(config: dict) -> None:
