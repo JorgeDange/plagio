@@ -49,8 +49,8 @@ def dashboard():
     except Exception as e:
         return render_template('main/dashboard.html',
             stats={'tcc_validos': 0, 'tcc_suspeitos': 0, 'total_verificacoes': 0,
-                   'plagio_alto': 0, 'cursos_activos': 0, 'pendentes': 0, 'sem_abnt': 0,
-                   'media_pct': 0, 'por_nivel': {'Baixo': 0, 'Moderado': 0, 'Alto': 0, 'Critico': 0},
+                   'plagio_alto': 0, 'cursos_activos': 0, 'pendentes': 0, 'pendentes_normas': 0,
+                   'sem_abnt': 0, 'media_pct': 0, 'por_nivel': {'Baixo': 0, 'Moderado': 0, 'Alto': 0, 'Critico': 0},
                    'sistema': {'modelo_ok': False, 'chroma_ok': False, 'ram_gb': 0, 'chunks': 0},
                    'verificacoes_por_mes': {}, 'verificacoes_mensais': [], 'distribuicao_curso': {},
                    'evolucao_media': {}, 'distribuicao_abnt': {}, 'suspeitos_por_estado': {}},
