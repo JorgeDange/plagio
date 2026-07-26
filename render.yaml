@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: imetro-tfc
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: MYSQL_HOST
+        fromDatabase:
+          name: imetro-db
+          property: host
+      - key: MYSQL_USER
+        fromDatabase:
+          name: imetro-db
+          property: user
+      - key: MYSQL_PASSWORD
+        fromDatabase:
+          name: imetro-db
+          property: password
+      - key: MYSQL_DB
+        fromDatabase:
+          name: imetro-db
+          property: database
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+      - key: LIMIAR_PLAGIO
+        value: "0.85"
+      - key: CHUNK_SIZE
+        value: "200"
+      - key: CHUNK_OVERLAP
+        value: "50"
+
+databases:
+  - name: imetro-db
+    plan: free
+    databaseName: plagio
+    ipAllowList: []
