@@ -227,12 +227,12 @@ def iniciar():
                     cur.execute('''
                         INSERT INTO fontes_externas_resultados 
                         (verificacao_id, chunk_id, fonte, titulo_externo, autores, ano_publicacao, doi, url_fonte, resumo_externo, score_semantico)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
                     ''', (
                         verif_id, None, res.get('fonte'), res.get('titulo'), autores_json,
                         res.get('ano'), res.get('doi'), res.get('url'), res.get('resumo'), res.get('score_semantico')
                     ))
-                    fonte_externa_id = cur.lastrowid
+                    fonte_externa_id = cur.fetchone()[0]
                     
                     if res.get('score_semantico') >= limiar_r:
                         chunks_suspeitos += 1

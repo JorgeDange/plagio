@@ -99,7 +99,7 @@ def verificar_imetro():
             if usar_ia:
                 try:
                     from core.normas_imetro_checker import verificar_normas_imetro, get_llm_config
-                    config_db = get_llm_config(current_app.config['DB_PATH'])
+                    config_db = get_llm_config()
                     
                     resultado_ia = verificar_normas_imetro(
                         texto_extraido=texto,

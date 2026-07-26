@@ -39,7 +39,7 @@ def executar_verificacao_normas(
             c = conn.cursor()
             c.execute('''
                 SELECT t.titulo, t.autor as autores, c.nome as curso, o.nome as orientador, 
-                       DATE_FORMAT(t.criado_em, '%%Y') as ano, t.caminho_ficheiro
+                       TO_CHAR(t.criado_em, 'YYYY') as ano, t.caminho_ficheiro
                 FROM tcc_suspeitos t
                 LEFT JOIN cursos c ON t.curso_id = c.id
                 LEFT JOIN orientadores o ON t.orientador_id = o.id
@@ -133,13 +133,13 @@ def executar_verificacao_normas(
                     ia_executada, ia_pontuacao_total, ia_classificacao, ia_num_infracoes,
                     ia_tem_bloqueante, ia_resultado_json, classificacao_final,
                     requer_correcao, resumo_problemas
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             ''', (
                 verificacao_id, 1, total_regras, regras_ok, regras_falhou, local_percentagem, local_json_str,
                 ia_executada, ia_pontuacao, ia_classificacao, ia_num_infracoes, ia_tem_bloqueante,
                 ia_json_str, classificacao_final, 1 if requer_correcao else 0, resumo_problemas
             ))
-            normas_id = c.lastrowid
+            normas_id = c.fetchone()[0]
             
         if row_vn:
             c.execute("DELETE FROM verificacoes_normas_infracoes WHERE normas_id = %s AND origem = 'local'", (normas_id,))

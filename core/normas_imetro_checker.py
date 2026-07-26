@@ -111,7 +111,7 @@ class UnimetroInspector:
         return res.json()["content"][0]["text"]
 
 
-def get_llm_config(db_path: str) -> dict:
+def get_llm_config(db_path: str = '') -> dict:
     """Lê as configurações de IA da tabela `configuracoes` via MySQL."""
     try:
         from app.database.db import get_db

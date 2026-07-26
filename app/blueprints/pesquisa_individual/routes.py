@@ -147,9 +147,9 @@ def executar():
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO pesquisas_avulsas (utilizador_id, tipo_entrada, texto_consulta, fontes_usadas, total_resultados)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s) RETURNING id
     ''', (current_user.id, tipo_entrada, texto_pesquisa, json.dumps(fontes), resultado_externo.get("total_suspeitos", 0)))
-    pesquisa_id = cursor.lastrowid
+    pesquisa_id = cursor.fetchone()[0]
     
     suspeitos = resultado_externo.get("suspeitos", [])
     for s in suspeitos:

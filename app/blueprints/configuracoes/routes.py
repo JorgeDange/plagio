@@ -183,7 +183,7 @@ def guardar_pesquisa_externa():
         ('timeout_api', timeout_api),
         ('apis_activas', apis_activas_str)
     ]:
-        cur.execute("REPLACE INTO config_pesquisa_externa (chave, valor) VALUES (%s, %s)", (chave, valor))
+        cur.execute("INSERT INTO config_pesquisa_externa (chave, valor) VALUES (%s, %s) ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor", (chave, valor))
     conn.commit()
     cur.close()
     
