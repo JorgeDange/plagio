@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS tcc_suspeitos (
     ultima_pct_plagio REAL,
     ultimo_nivel VARCHAR(20) DEFAULT '',
     aprovado_por INTEGER,
+    submetido_por INTEGER,
     aprovado_em TIMESTAMP NULL,
     nota_aprovacao VARCHAR(50)
 );
