@@ -29,7 +29,6 @@ Responda OBRIGATORIAMENTE em JSON no seguinte formato exato:
   },
   "recomendacoes": ["Recomendação 1", "Recomendação 2"]
 }
-}
 """
 
 def build_normas_payload(

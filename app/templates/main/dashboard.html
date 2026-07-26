@@ -413,18 +413,18 @@
     const barLabels = Object.keys(S.verificacoes_por_mes);
     const barData = Object.values(S.verificacoes_por_mes);
     
-    // Calcular um valor "máximo" simulado para o background bar (ex: 20% acima do máximo real)
-    const maxVal = Math.max(...barData);
-    const bgVal = Math.ceil((maxVal * 1.2) / 10) * 10; // Arredonda para a dezena superior
+    const monthNames = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
+    
+    const maxVal = barData.length > 0 ? Math.max(...barData) : 0;
+    const bgVal = maxVal > 0 ? Math.ceil((maxVal * 1.2) / 10) * 10 : 10;
     const bgData = Array(barLabels.length).fill(bgVal);
 
-    // Cores vibrantes conforme o design fornecido
     const barColors = ['#14b8a6', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
 
     new Chart(ctxBar, {
         type: 'bar',
         data: {
-            labels: barLabels.map(l => l.substring(0, 3)), // Abrevia para 3 letras ex: "Jan"
+            labels: barLabels.map(l => monthNames[l.substring(5,7)] || l),
             datasets: [
                 {
                     label: 'Análises',
@@ -499,13 +499,20 @@
     // Dados reais de aprovados/reprovados por mês
     const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     const mesesChave = ["01","02","03","04","05","06","07","08","09","10","11","12"];
-    const anoRef = new Date().getFullYear();
 
-    const lineDataAprovados = mesesChave.map(function(m, i) {
+    let anoRef = new Date().getFullYear();
+    const anosNoDados = S.verificacoes_mensais.map(r => parseInt(r.mes.split('-')[0])).filter(a => !isNaN(a));
+    if (anosNoDados.length > 0) {
+        const contagem = {};
+        anosNoDados.forEach(a => contagem[a] = (contagem[a] || 0) + 1);
+        anoRef = parseInt(Object.keys(contagem).reduce((a, b) => contagem[a] > contagem[b] ? a : b));
+    }
+
+    const lineDataAprovados = mesesChave.map(function(m) {
       var item = S.verificacoes_mensais.find(function(r) { return r.mes === anoRef + '-' + m; });
       return item ? item.aprovados : 0;
     });
-    const lineDataReprovados = mesesChave.map(function(m, i) {
+    const lineDataReprovados = mesesChave.map(function(m) {
       var item = S.verificacoes_mensais.find(function(r) { return r.mes === anoRef + '-' + m; });
       return item ? item.reprovados : 0;
     });
