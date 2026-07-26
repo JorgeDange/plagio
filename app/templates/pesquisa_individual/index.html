@@ -20,7 +20,6 @@
     <div style="display: flex; gap: 10px; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
         <button type="button" class="btn btn-primary" data-tab="tab-texto" id="btn-tab-texto"><i class='ti ti-text-recognition'></i> Colar Texto</button>
         <button type="button" class="btn btn-ghost" data-tab="tab-titulo" id="btn-tab-titulo"><i class='ti ti-heading'></i> Por Título</button>
-        <button type="button" class="btn btn-ghost" data-tab="tab-ficheiro" id="btn-tab-ficheiro"><i class='ti ti-upload'></i> Carregar Ficheiro</button>
     </div>
 
     <form id="form-pesquisa" onsubmit="executarPesquisa(event)">
@@ -41,19 +40,6 @@
                 <label class="form-label">Título ou palavras-chave <span class="obrigatorio">*</span></label>
                 <input type="text" class="form-control" name="titulo" id="titulo" placeholder="Título ou palavras-chave do trabalho">
                 <span class="form-help"><i class='ti ti-info-circle'></i> Útil para verificar se um trabalho já foi publicado</span>
-            </div>
-        </div>
-        
-        <!-- Tab Ficheiro -->
-        <div id="tab-ficheiro" class="tab-content" style="display: none;">
-            <div class="form-group">
-                <label class="form-label">Documento <span class="obrigatorio">*</span></label>
-                <div class="form-upload-area" id="drop-area" onclick="document.getElementById('ficheiro').click()">
-                    <i class='ti ti-cloud-upload' style="font-size: 3rem; color: var(--accent);"></i>
-                    <p style="margin: 10px 0; font-weight: 500;">Arraste e largue o seu ficheiro aqui ou clique para selecionar</p>
-                    <input type="file" name="ficheiro" id="ficheiro" accept=".pdf,.docx,.txt" onchange="atualizarNomeFicheiro(this)">
-                    <span class="form-help" id="file-name">Formatos suportados: PDF, DOCX, TXT. Tamanho máximo: 10 MB.</span>
-                </div>
             </div>
         </div>
 
@@ -189,42 +175,8 @@
         document.getElementById('limiar-texto').innerText = val;
     }
     
-    // File upload visual
-    const fileInput = document.getElementById('ficheiro');
-    const fileName = document.getElementById('file-name');
-    function atualizarNomeFicheiro(input) {
-        if(input.files && input.files.length > 0) {
-            fileName.innerText = 'Ficheiro selecionado: ' + input.files[0].name;
-            fileName.style.color = 'var(--accent)';
-            fileName.style.fontWeight = '600';
-            document.getElementById('drop-area').style.borderColor = 'var(--accent)';
-        }
-    }
-    
-    // Drop area logic
-    const dropArea = document.getElementById('drop-area');
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-    });
-    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false);
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false);
-    });
-    
-    dropArea.addEventListener('drop', (e) => {
-        let dt = e.dataTransfer;
-        let files = dt.files;
-        if(files.length > 0) {
-            fileInput.files = files;
-            atualizarNomeFicheiro(fileInput);
-        }
-    }, false);
-
-    function novaPesquisa() {
+    // Range Limiar
+    function atualizarLimiar(val) {
         document.getElementById('area-resultados').style.display = 'none';
         document.getElementById('resultados-conteudo').innerHTML = '';
         document.getElementById('botoes-exportar').style.display = 'none';
@@ -245,10 +197,6 @@
         }
         if(tipo === 'titulo' && titulo.length < 5) {
             showAlert('Validação', 'Introduza um título válido.', 'warning');
-            return;
-        }
-        if(tipo === 'ficheiro' && fileInput.files.length === 0) {
-            showAlert('Validação', 'Selecione um ficheiro.', 'warning');
             return;
         }
 

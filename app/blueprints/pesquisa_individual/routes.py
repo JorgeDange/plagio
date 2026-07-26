@@ -167,8 +167,8 @@ def executar():
         autores = json.dumps(s.get("autores", [])) if s.get("autores") else None
         cursor.execute('''
             INSERT INTO fontes_externas_resultados (
-                fonte, titulo_externo, autores, ano_publicacao, doi, url_fonte, resumo_externo, score_semantico, pesquisa_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                fonte, titulo_externo, autores, ano_publicacao, doi, url_fonte, resumo_externo, frase_origem, score_semantico, pesquisa_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (
             s.get("fonte"),
             s.get("titulo"),
@@ -177,6 +177,7 @@ def executar():
             s.get("doi"),
             s.get("url"),
             s.get("resumo"),
+            s.get("frase_origem"),
             s.get("score_semantico"),
             pesquisa_id
         ))
@@ -206,9 +207,25 @@ def resultado(pesquisa_id):
         flash("Pesquisa não encontrada ou acesso negado.", "erro")
         return redirect(url_for('pesquisa_individual.index'))
         
-    cur.execute("SELECT * FROM fontes_externas_resultados WHERE pesquisa_id = %s ORDER BY score_semantico DESC", (pesquisa_id,))
-    r_cols = [d[0] for d in cur.description]
-    resultados = [dict(zip(r_cols, row)) for row in cur.fetchall()]
+    cur.execute('''SELECT id, fonte, titulo_externo AS titulo, autores,
+        ano_publicacao AS ano, doi, url_fonte AS url,
+        resumo_externo AS resumo, frase_origem, score_semantico, criado_em
+        FROM fontes_externas_resultados
+        WHERE pesquisa_id = %s ORDER BY score_semantico DESC''', (pesquisa_id,))
+    resultados = []
+    for row in cur.fetchall():
+        r = {
+            'id': row[0], 'fonte': row[1], 'titulo': row[2], 'autores': row[3],
+            'ano': row[4], 'doi': row[5], 'url': row[6], 'resumo': row[7],
+            'frase_origem': row[8], 'score_semantico': row[9], 'criado_em': row[10]
+        }
+        if r['autores']:
+            try:
+                parsed = json.loads(r['autores'])
+                r['autores'] = ', '.join(parsed) if isinstance(parsed, list) else str(parsed)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        resultados.append(r)
     cur.close()
     
     return render_template('pesquisa_individual/resultado.html', pesquisa=pesquisa, resultados=resultados)

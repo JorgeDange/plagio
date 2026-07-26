@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS fontes_externas_resultados (
     doi VARCHAR(200),
     url_fonte TEXT,
     resumo_externo TEXT,
+    frase_origem TEXT,
     score_semantico REAL NOT NULL,
     pesquisa_id INTEGER,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -382,3 +383,5 @@ ALTER TABLE sessoes_pesquisa
 
 ALTER TABLE resultados_pesquisa
     ADD CONSTRAINT fk_resultados_pesquisa_sessao_id FOREIGN KEY (sessao_id) REFERENCES sessoes_pesquisa(id);
+
+ALTER TABLE fontes_externas_resultados ADD COLUMN IF NOT EXISTS frase_origem TEXT;

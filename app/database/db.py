@@ -23,8 +23,15 @@ def get_db_config():
 
 
 def init_db(db_path=None) -> None:
-    """PostgreSQL: tabelas já criadas via migração. Nada a fazer."""
-    pass
+    """PostgreSQL: aplicar migrações pendentes."""
+    try:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute("ALTER TABLE fontes_externas_resultados ADD COLUMN IF NOT EXISTS frase_origem TEXT")
+        db.commit()
+        cur.close()
+    except Exception:
+        pass
 
 
 def get_db():
