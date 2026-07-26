@@ -25,11 +25,16 @@ def get_db_config():
 def init_db(db_path=None) -> None:
     """PostgreSQL: aplicar migrações pendentes."""
     try:
-        db = get_db()
-        cur = db.cursor()
+        config = get_db_config()
+        if isinstance(config, str):
+            conn = psycopg2.connect(config)
+        else:
+            conn = psycopg2.connect(**config)
+        conn.autocommit = True
+        cur = conn.cursor()
         cur.execute("ALTER TABLE fontes_externas_resultados ADD COLUMN IF NOT EXISTS frase_origem TEXT")
-        db.commit()
         cur.close()
+        conn.close()
     except Exception:
         pass
 
