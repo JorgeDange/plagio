@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build.sh - Script de build para Render.com
+# build.sh - Script de build para Render.com (PostgreSQL)
 
 set -e
 
@@ -9,21 +9,24 @@ pip install -r requirements.txt
 echo "🗄️ A executar migrações da base de dados..."
 python -c "
 import os
-import mysql.connector
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
 
-config = {
-    'host': os.getenv('MYSQL_HOST', 'localhost'),
-    'user': os.getenv('MYSQL_USER', 'root'),
-    'password': os.getenv('MYSQL_PASSWORD', ''),
-    'database': os.getenv('MYSQL_DB', 'plagio'),
-    'charset': 'utf8mb4'
-}
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    db = psycopg2.connect(database_url)
+else:
+    db = psycopg2.connect(
+        host=os.getenv('PGHOST', 'localhost'),
+        user=os.getenv('PGUSER', 'postgres'),
+        password=os.getenv('PGPASSWORD', ''),
+        dbname=os.getenv('PGDATABASE', 'plagio'),
+        port=os.getenv('PGPORT', '5432')
+    )
 
 try:
-    db = mysql.connector.connect(**config)
     cur = db.cursor()
 
     # Ler e executar ficheiros de migração
@@ -56,23 +59,26 @@ except Exception as e:
 echo "👤 A verificar administrador..."
 python -c "
 import os
-import mysql.connector
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
 
-config = {
-    'host': os.getenv('MYSQL_HOST', 'localhost'),
-    'user': os.getenv('MYSQL_USER', 'root'),
-    'password': os.getenv('MYSQL_PASSWORD', ''),
-    'database': os.getenv('MYSQL_DB', 'plagio'),
-    'charset': 'utf8mb4'
-}
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    db = psycopg2.connect(database_url)
+else:
+    db = psycopg2.connect(
+        host=os.getenv('PGHOST', 'localhost'),
+        user=os.getenv('PGUSER', 'postgres'),
+        password=os.getenv('PGPASSWORD', ''),
+        dbname=os.getenv('PGDATABASE', 'plagio'),
+        port=os.getenv('PGPORT', '5432')
+    )
 
 try:
-    db = mysql.connector.connect(**config)
     cur = db.cursor()
-    cur.execute('SELECT COUNT(*) FROM utilizadores WHERE papel = \"admin\"')
+    cur.execute(\"SELECT COUNT(*) FROM utilizadores WHERE papel = 'admin'\")
     count = cur.fetchone()[0]
     if count == 0:
         print('  ℹ Nenhum administrador encontrado. Execute scripts/criar_admin.py após o deploy.')
