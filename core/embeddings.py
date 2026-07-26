@@ -59,10 +59,19 @@ def _make_request(payload: dict) -> dict:
         )
         # Se for erro de cliente (4xx) que não devemos retryar, levanta exceção imediatamente
         if response.status_code in (401, 403, 429):
+            logger.error(f"OpenRouter API erro HTTP {response.status_code}: {response.text[:500]}")
             response.raise_for_status()
         # Para outros 4xx e 5xx, o retry strategy já tratou os 5xx, mas 4xx não são retried
         # Vamos levantar para que o retry trate os 5xx e nós tratemos os 4xx abaixo
         response.raise_for_status()
+        # Verificar se a resposta é JSON antes de tentar fazer parse
+        content_type = response.headers.get("content-type", "")
+        if "application/json" not in content_type:
+            logger.error(f"OpenRouter API respondeu com content-type '{content_type}': {response.text[:500]}")
+            raise EmbeddingServiceError(
+                f"OpenRouter API respondeu com formato inválido ({content_type}). "
+                f"Verifique se a chave OPENROUTER_API_KEY é válida."
+            )
         return response.json()
     except requests.exceptions.RequestException as e:
         # Se for um erro de conexão, timeout, etc., o retry já foi aplicado pelo adapter
@@ -85,9 +94,12 @@ def gerar_embedding(texto: str) -> list[float]:
     if not OPENROUTER_API_KEY:
         raise EmbeddingServiceError("OPENROUTER_API_KEY não configurada no ambiente.")
     
+    # Limitar texto a 8000 caracteres para evitar payloads excessivamente grandes
+    texto_limitado = texto[:8000] if texto else ""
+    
     payload = {
         "model": OPENROUTER_EMBEDDING_MODEL,
-        "input": texto
+        "input": texto_limitado
     }
     
     try:
@@ -104,6 +116,8 @@ def gerar_embedding(texto: str) -> list[float]:
     except (KeyError, IndexError, json.JSONDecodeError) as e:
         logger.error(f"Resposta inválida da API de embeddings: {e}")
         raise EmbeddingServiceError(f"Resposta inválida da API: {e}")
+    except EmbeddingServiceError:
+        raise
     except requests.exceptions.RequestException as e:
         logger.error(f"Falha na chamada à API de embeddings após {OPENROUTER_MAX_RETRIES} tentativas: {e}")
         raise EmbeddingServiceError(f"Falha na chamada à API de embeddings: {e}")
@@ -124,9 +138,12 @@ def gerar_embeddings_lote(textos: list[str]) -> list[list[float]]:
     if not textos:
         return []
     
+    # Limitar cada texto a 8000 caracteres
+    textos_limitados = [t[:8000] if t else "" for t in textos]
+    
     payload = {
         "model": OPENROUTER_EMBEDDING_MODEL,
-        "input": textos
+        "input": textos_limitados
     }
     
     try:
@@ -143,6 +160,8 @@ def gerar_embeddings_lote(textos: list[str]) -> list[list[float]]:
     except (KeyError, IndexError, json.JSONDecodeError) as e:
         logger.error(f"Resposta inválida da API de embeddings em lote: {e}")
         raise EmbeddingServiceError(f"Resposta inválida da API: {e}")
+    except EmbeddingServiceError:
+        raise
     except requests.exceptions.RequestException as e:
         logger.error(f"Falha na chamada à API de embeddings em lote após {OPENROUTER_MAX_RETRIES} tentativas: {e}")
         raise EmbeddingServiceError(f"Falha na chamada à API de embeddings em lote: {e}")
