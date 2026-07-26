@@ -762,10 +762,13 @@ def listar_embeddings_por_tipo(tipo):
     cur.execute('SELECT tcc_id, chunk_texto, vector FROM embeddings_chunks WHERE tipo = %s', (tipo,))
     results = []
     for row in cur.fetchall():
+        vec = row[2]
+        if isinstance(vec, str):
+            vec = json.loads(vec)
         results.append({
             'tcc_id': row[0],
             'chunk_texto': row[1],
-            'vector': json.loads(row[2])
+            'vector': vec
         })
     cur.close()
     return results
