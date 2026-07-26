@@ -39,7 +39,7 @@ def executar_verificacao_normas(
             c = conn.cursor()
             c.execute('''
                 SELECT t.titulo, t.autor as autores, c.nome as curso, o.nome as orientador, 
-                       TO_CHAR(t.criado_em, 'YYYY') as ano, t.caminho_ficheiro
+                       t.ano_submissao as ano, t.caminho_ficheiro
                 FROM tcc_suspeitos t
                 LEFT JOIN cursos c ON t.curso_id = c.id
                 LEFT JOIN orientadores o ON t.orientador_id = o.id
