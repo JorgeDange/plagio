@@ -9,32 +9,33 @@ from app.database import db
 from core.auth_helpers import requer_verificador
 from core.ingestor import extrair, limpar_texto
 from core.pesquisa_externa import pesquisar_texto_completo
-from core.embeddings import gerar_embedding, gerar_embeddings_lote
 from . import pesquisa_individual_bp
 
 
-class _EmbeddingAdapter:
-    """Adaptador que expoe .encode() e .encode_batch() usando OpenRouter API."""
-    def encode(self, text):
+class _TextSimilarityAdapter:
+    """Adaptador de similaridade baseado em texto (char n-grams), 100% local, sem API externa."""
+    
+    def _vectorize(self, text):
         import numpy as np
-        try:
-            return np.array(gerar_embedding(text))
-        except Exception as e:
-            import logging
-            logging.error(f"Erro ao gerar embedding: {e}")
+        from collections import Counter
+        text = (text or "").lower()
+        ngrams = Counter()
+        for n in (2, 3, 4):
+            for i in range(len(text) - n + 1):
+                ngrams[text[i:i+n]] += 1
+        if not ngrams:
             return np.zeros(1024)
+        vec = np.zeros(1024, dtype=np.float32)
+        for i, (_, freq) in enumerate(ngrams.most_common(1024)):
+            vec[i] = freq
+        return vec / (np.linalg.norm(vec) or 1.0)
+    
+    def encode(self, text):
+        return self._vectorize(text)
     
     def encode_batch(self, texts):
-        import numpy as np
-        if not texts:
-            return []
-        try:
-            embeddings = gerar_embeddings_lote(texts)
-            return [np.array(e) if e else np.zeros(1024) for e in embeddings]
-        except Exception as e:
-            import logging
-            logging.error(f"Erro ao gerar embeddings em lote: {e}")
-            return [np.zeros(1024) for _ in texts]
+        return [self._vectorize(t) for t in texts]
+
 
 @pesquisa_individual_bp.route('/')
 @requer_verificador
@@ -125,7 +126,7 @@ def executar():
     if tipo_entrada == 'titulo':
         from core.pesquisa_externa import pesquisar_todas_fontes, calcular_scores_semanticos
         res_brutos = pesquisar_todas_fontes(texto_pesquisa, fontes, config=config)
-        res_scores = calcular_scores_semanticos(texto_pesquisa, res_brutos, _EmbeddingAdapter())
+        res_scores = calcular_scores_semanticos(texto_pesquisa, res_brutos, _TextSimilarityAdapter())
         suspeitos = []
         for r in res_scores:
             if r["score_semantico"] >= limiar:
@@ -143,7 +144,7 @@ def executar():
     else:
         resultado_externo = pesquisar_texto_completo(
             texto=texto_pesquisa,
-            modelo_embeddings=_EmbeddingAdapter(),
+            modelo_embeddings=_TextSimilarityAdapter(),
             config=config,
             limiar_alerta=limiar,
             max_frases=7,
