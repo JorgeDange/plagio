@@ -331,8 +331,8 @@ def remover_tcc_suspeito(id):
 
     if verif_ids:
         placeholders = ','.join(['%s'] * len(verif_ids))
-        cur.execute(f'DELETE FROM chunks_suspeitos WHERE verificacao_id IN ({placeholders})', verif_ids)
         cur.execute(f'DELETE FROM analises_ia WHERE verificacao_id IN ({placeholders})', verif_ids)
+        cur.execute(f'DELETE FROM chunks_suspeitos WHERE verificacao_id IN ({placeholders})', verif_ids)
         cur.execute(f'DELETE FROM fontes_externas_resultados WHERE verificacao_id IN ({placeholders})', verif_ids)
         cur.execute(f'DELETE FROM fontes_externas WHERE verificacao_id IN ({placeholders})', verif_ids)
         cur.execute(f'DELETE FROM matches WHERE verificacao_id IN ({placeholders})', verif_ids)
